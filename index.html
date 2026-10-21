@@ -1,798 +1,610 @@
-
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE1 html>
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#090b10">
-  <meta name="description" content="TITAN — Discover movies, explore series, and find your next great watch.">
-  <title>TITAN — Your Next Great Watch</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <style>
-    :root {
-      --bg: #090b10;
-      --bg-soft: #10131b;
-      --panel: #151924;
-      --panel-2: #1b2030;
-      --text: #f6f7fb;
-      --muted: #9ba3b7;
-      --line: rgba(255,255,255,.09);
-      --accent: #e6bd65;
-      --accent-hover: #f5d58e;
-      --danger: #e45b68;
-      --success: #62c99b;
-      --radius: 15px;
-      --nav-height: 76px;
-      --max-width: 1600px;
-      --shadow: 0 24px 80px rgba(0,0,0,.48);
-    }
-
-    * { box-sizing: border-box; }
-
-    html {
-      scroll-behavior: smooth;
-      scroll-padding-top: 90px;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: "DM Sans", sans-serif;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    body.modal-open { overflow: hidden; }
-
-    button, input, select {
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-      color: inherit;
-    }
-
-    button:focus-visible,
-    input:focus-visible,
-    select:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 3px;
-    }
-
-    img { display: block; max-width: 100%; }
-
-    a { color: inherit; text-decoration: none; }
-
-    .hidden { display: none !important; }
-
-    .muted { color: var(--muted); }
-
-    .accent { color: var(--accent); }
-
-    .container {
-      width: min(100% - 64px, var(--max-width));
-      margin-inline: auto;
-    }
-
-    .topbar {
-      height: var(--nav-height);
-      position: fixed;
-      z-index: 100;
-      inset: 0 0 auto;
-      display: flex;
-      align-items: center;
-      transition: background .25s, box-shadow .25s;
-      background: linear-gradient(to bottom, rgba(6,8,13,.88), transparent);
-    }
-
-    .topbar.scrolled {
-      background: rgba(9,11,16,.96);
-      box-shadow: 0 1px 0 var(--line);
-      backdrop-filter: blur(18px);
-    }
-
-    .nav-inner {
-      width: min(100% - 48px, var(--max-width));
-      margin: auto;
-      display: flex;
-      align-items: center;
-      gap: 36px;
-    }
-
-    .brand {
-      font-family: Manrope, sans-serif;
-      font-size: 29px;
-      font-weight: 800;
-      letter-spacing: 3px;
-      white-space: nowrap;
-      cursor: pointer;
-    }
-
-    .brand span { color: var(--accent); }
-
-    .nav-links {
-      display: flex;
-      gap: 24px;
-      align-items: center;
-      flex: 1;
-    }
-
-    .nav-link {
-      border: 0;
-      background: transparent;
-      color: #c0c5d0;
-      padding: 8px 0;
-      font-size: 13px;
-      transition: color .2s;
-      white-space: nowrap;
-    }
-
-    .nav-link:hover,
-    .nav-link.active { color: #fff; }
-
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .icon-button {
-      border: 0;
-      background: transparent;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      color: #e9ebf2;
-      font-size: 19px;
-      transition: background .2s;
-    }
-
-    .icon-button:hover { background: rgba(255,255,255,.1); }
-
-    .avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #b98a39, #f4d992);
-      color: #17130a;
-      display: grid;
-      place-items: center;
-      font-weight: 800;
-      border: 0;
-    }
-
-    .hero {
-      position: relative;
-      min-height: min(780px, 92vh);
-      display: flex;
-      align-items: center;
-      padding: 130px 0 110px;
-      background: #11141c;
-      overflow: hidden;
-    }
-
-    .hero-background {
-      position: absolute;
-      inset: 0;
-      background-size: cover;
-      background-position: center 25%;
-      opacity: .78;
-      transition: background-image .4s ease;
-    }
-
-    .hero::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: 
-        linear-gradient(90deg, rgba(9,11,16,.98) 0%, rgba(9,11,16,.82) 32%, rgba(9,11,16,.24) 72%, rgba(9,11,16,.3) 100%),
-        linear-gradient(0deg, var(--bg) 0%, transparent 45%, rgba(9,11,16,.18) 100%);
-      z-index: 1;
-    }
-
-    .hero-content {
-      position: relative;
-      z-index: 2;
-      max-width: 650px;
-      animation: fadeUp .6s ease both;
-    }
-
-    .eyebrow {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 11px;
-      letter-spacing: 3px;
-      font-weight: 700;
-      color: var(--accent);
-      text-transform: uppercase;
-      margin-bottom: 22px;
-    }
-
-    .eyebrow::before {
-      content: "";
-      width: 28px;
-      height: 1px;
-      background: var(--accent);
-    }
-
-    .hero h1 {
-      font-family: Manrope, sans-serif;
-      font-size: clamp(42px, 6.5vw, 84px);
-      line-height: 1.02;
-      letter-spacing: -3px;
-      margin: 0 0 20px;
-      max-width: 720px;
-      overflow-wrap: anywhere;
-    }
-
-    .hero-meta {
-      display: flex;
-      gap: 14px;
-      align-items: center;
-      flex-wrap: wrap;
-      font-size: 13px;
-      color: #d3d6de;
-      margin-bottom: 20px;
-    }
-
-    .rating {
-      color: var(--accent);
-      font-weight: 700;
-    }
-
-    .quality {
-      border: 1px solid rgba(255,255,255,.28);
-      padding: 3px 7px;
-      font-size: 10px;
-      border-radius: 4px;
-      letter-spacing: 1px;
-    }
-
-    .hero-description {
-      color: #c5c9d3;
-      font-size: 15px;
-      line-height: 1.85;
-      max-width: 540px;
-      display: -webkit-box;
-      -webkit-line-clamp: 4;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      margin: 0 0 28px;
-    }
-
-    .button-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      min-height: 46px;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      border: 1px solid transparent;
-      border-radius: 7px;
-      padding: 0 20px;
-      font-size: 13px;
-      font-weight: 700;
-      transition: transform .2s, background .2s, border-color .2s;
-    }
-
-    .btn:hover { transform: translateY(-2px); }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #14110a;
-    }
-
-    .btn-primary:hover { background: var(--accent-hover); }
-
-    .btn-secondary {
-      background: rgba(255,255,255,.1);
-      border-color: rgba(255,255,255,.14);
-      color: #fff;
-      backdrop-filter: blur(8px);
-    }
-
-    .btn-secondary:hover { background: rgba(255,255,255,.17); }
-
-    .section {
-      padding: 22px 0 24px;
-      position: relative;
-    }
-
-    .section-heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 18px;
-    }
-
-    .section-title {
-      font-family: Manrope, sans-serif;
-      font-size: 20px;
-      font-weight: 800;
-      margin: 0;
-      letter-spacing: -.5px;
-    }
-
-    .poster-grid {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 18px 14px;
-    }
-
-    .shelf {
-      display: flex;
-      gap: 14px;
-      overflow-x: auto;
-      overflow-y: hidden;
-      padding: 3px 1px 16px;
-      scrollbar-width: thin;
-      scrollbar-color: #353949 transparent;
-    }
-
-    .shelf .poster-card {
-      flex: 0 0 calc((100% - 70px) / 6);
-      min-width: 135px;
-    }
-
-    .poster-card {
-      min-width: 0;
-      cursor: pointer;
-      position: relative;
-      animation: fadeUp .4s ease both;
-    }
-
-    .poster-image-wrap {
-      aspect-ratio: 2 / 3;
-      position: relative;
-      overflow: hidden;
-      background: #191d28;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,.06);
-    }
-
-    .poster-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform .35s ease, filter .35s ease;
-    }
-
-    .poster-card:hover .poster-image {
-      transform: scale(1.055);
-      filter: brightness(.72);
-    }
-
-    .poster-hover {
-      position: absolute;
-      inset: auto 0 0;
-      padding: 34px 10px 12px;
-      background: linear-gradient(transparent, rgba(0,0,0,.92));
-      opacity: 0;
-      transform: translateY(7px);
-      transition: opacity .25s, transform .25s;
-      pointer-events: none;
-    }
-
-    .poster-card:hover .poster-hover {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .poster-hover-rating {
-      color: var(--accent);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .poster-favorite {
-      position: absolute;
-      right: 8px;
-      top: 8px;
-      width: 32px;
-      height: 32px;
-      display: grid;
-      place-items: center;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,.2);
-      background: rgba(5,6,9,.7);
-      color: white;
-      font-size: 17px;
-      opacity: 0;
-      transition: opacity .2s;
-    }
-
-    .poster-card:hover .poster-favorite,
-    .poster-favorite.is-favorite { opacity: 1; }
-    .poster-favorite.is-favorite { color: var(--accent); }
-
-    .poster-title {
-      margin: 10px 0 4px;
-      font-size: 12px;
-      line-height: 1.5;
-      font-weight: 700;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .poster-meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 5px;
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 200;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      background: rgba(0,0,0,.78);
-      backdrop-filter: blur(8px);
-      overflow-y: auto;
-    }
-
-    .modal {
-      width: min(950px, 100%);
-      max-height: calc(100vh - 40px);
-      overflow-y: auto;
-      background: #11141d;
-      border: 1px solid rgba(255,255,255,.1);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      position: relative;
-    }
-
-    .modal-close {
-      position: absolute;
-      z-index: 5;
-      right: 16px;
-      top: 16px;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,.2);
-      background: rgba(5,7,11,.8);
-      color: #fff;
-      font-size: 22px;
-    }
-
-    .detail-backdrop {
-      min-height: 320px;
-      background-size: cover;
-      background-position: center 30%;
-      position: relative;
-      display: flex;
-      align-items: end;
-    }
-
-    .detail-backdrop::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(0deg, #11141d 0%, rgba(17,20,29,.25) 75%),
-                  linear-gradient(90deg, rgba(17,20,29,.7), transparent);
-    }
-
-    .detail-top-content {
-      position: relative;
-      padding: 38px 35px 24px;
-      width: 100%;
-    }
-
-    .detail-title {
-      font: 800 clamp(28px, 4vw, 48px)/1.15 Manrope, sans-serif;
-      margin: 0 0 14px;
-    }
-
-    .detail-content { padding: 0 35px 35px; }
-
-    .detail-meta {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      font-size: 12px;
-      color: #c5cad5;
-      margin-bottom: 18px;
-    }
-
-    .detail-description {
-      max-width: 760px;
-      font-size: 14px;
-      color: #c1c6d1;
-      line-height: 1.9;
-      margin: 0 0 24px;
-    }
-
-    .player-shell {
-      width: min(1100px, 100%);
-      background: #0b0d12;
-      border-radius: 14px;
-      overflow: hidden;
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-      position: relative;
-    }
-
-    .player-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 15px 20px;
-      background: #131722;
-    }
-
-    .player-frame-wrap {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #000;
-    }
-
-    .player-frame {
-      width: 100%;
-      height: 100%;
-      border: 0;
-      display: block;
-    }
-
-    .toast-region {
-      position: fixed;
-      z-index: 400;
-      bottom: 24px;
-      right: 24px;
-      display: grid;
-      gap: 9px;
-    }
-
-    .toast {
-      padding: 14px 16px;
-      border-radius: 9px;
-      background: #202636;
-      border: 1px solid var(--line);
-      font-size: 13px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERLMovie</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Thème principal : Noir et Rouge Netflix */
+        :root {
+            --bg-main: #0e0e0e;
+            --bg-card: #181818;
+            --primary-red: #E50914;
+            --text-white: #ffffff;
+            --text-gray: #aaaaaa;
+            --border-color: #2b2b2b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-white);
+            padding-bottom: 70px;
+            overflow-x: hidden;
+        }
+
+        /* Top Bar & Header */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background-color: rgba(14, 14, 14, 0.95);
+            backdrop-filter: blur(8px);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            color: var(--primary-red);
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .search-box {
+            position: relative;
+            flex-grow: 1;
+            max-width: 300px;
+            margin-left: 15px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 35px 8px 12px;
+            background-color: #222;
+            border: 1px solid #333;
+            border-radius: 20px;
+            color: var(--text-white);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary-red);
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-gray);
+        }
+
+        /* Container Principal */
+        .container {
+            padding: 16px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin: 18px 0 10px 0;
+            color: var(--text-white);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-title span {
+            border-right: 3px solid var(--primary-red);
+            padding-right: 8px;
+        }
+
+        /* Grid Movies & Series */
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 12px;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .card:active {
+            transform: scale(0.96);
+        }
+
+        .card img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .rating-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #ffd700;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .card-title {
+            padding: 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+        }
+
+        /* Navigation inférieure (Mobile) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background-color: #121212;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-gray);
+            font-size: 0.75rem;
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            color: var(--primary-red);
+        }
+
+        .nav-item i {
+            font-size: 1.2rem;
+            margin-bottom: 3px;
+        }
+    </style>
 </head>
 <body>
 
-  <header class="topbar" id="topbar">
-    <div class="nav-inner">
-      <div class="brand" id="brandBtn">TITA<span>N</span></div>
-      <nav class="nav-links">
-        <button class="nav-link active" data-page="home">Home</button>
-        <button class="nav-link" data-page="movies">Movies</button>
-        <button class="nav-link" data-page="tv">TV Shows</button>
-        <button class="nav-link" data-page="mylist">My List</button>
-      </nav>
+    <header>
+        <div class="logo">MERLMOVIE</div>
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="بحث عن فيلم أو مسلسل..." onkeyup="handleSearch()">
+        </div>
+    </header>
+
+    <div class="container" id="appContent">
+        <div class="section-title">
+            <span>الأكثر مشاهدة اليوم</span>
+        </div>
+        <div class="media-grid" id="trendingGrid">
+            <!-- Dynamic Content -->
+        </div>
     </div>
-  </header>
 
-  <main id="mainContainer">
-    <!-- HERO SECTION -->
-    <section class="hero" id="heroSection">
-      <div class="hero-background" id="heroBg" style="background-image: url('https://image.tmdb.org/t/p/original/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg')"></div>
-      <div class="container hero-content">
-        <div class="eyebrow">TITAN ORIGINAL</div>
-        <h1 id="heroTitle">Dune: Part Two</h1>
-        <div class="hero-meta">
-          <span class="rating" id="heroRating">⭐ 98% Match</span>
-          <span class="quality">4K</span>
-          <span id="heroYear">2024</span>
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item active"><i class="fas fa-home"></i><span>الرئيسية</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-compass"></i><span>اكتشف</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-bookmark"></i><span>المكتبة</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-bars"></i><span>المزيد</span></a>
+    </nav>
+    <!-- Contenu additionnel et Modal de détails -->
+    <div id="movieModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; overflow-y:auto; padding:20px;">
+        <div style="max-width:600px; margin:auto; background:#181818; border-radius:12px; overflow:hidden; position:relative;">
+            <button onclick="closeModal()" style="position:absolute; top:15px; right:15px; background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer;"><i class="fas fa-times"></i></button>
+            <div id="modalBody">
+                <!-- Remplir dynamiquement via JS -->
+            </div>
         </div>
-        <p class="hero-description" id="heroDesc">Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.</p>
-        <div class="button-row">
-          <button class="btn btn-primary" id="heroPlayBtn">▶ Play Now</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- CONTENT SHELVES -->
-    <div class="container" style="padding-top: 30px;">
-      <section class="section">
-        <div class="section-heading">
-          <h2 class="section-title">Trending This Week</h2>
-        </div>
-        <div class="shelf" id="trendingShelf"></div>
-      </section>
-
-      <section class="section">
-        <div class="section-heading">
-          <h2 class="section-title">Popular Movies</h2>
-        </div>
-        <div class="shelf" id="popularMoviesShelf"></div>
-      </section>
     </div>
-  </main>
 
-  <!-- MODAL CONTAINER -->
-  <div class="modal-backdrop hidden" id="modalBackdrop">
-    <div class="modal" id="modalContent"></div>
-  </div>
+    <script>
+        const TMDB_API_KEY = "YOUR_API_KEY"; // Remplacez par votre clé API TMDB si nécessaire ou utilisez le flux par défaut
+        const IMG_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
-  <div class="toast-region" id="toastRegion"></div>
+        // Exemple de données pour alimenter l'interface de manière fluide et professionnelle
+        const sampleMovies = [
+            { id: 1, title: "Spider-Man: Brand New Day", rating: "8.5", year: "2026", poster: "https://image.tmdb.org/t/p/w500/qNBAXBIQlnOtrVvAWMHtDC3g3RC.jpg", overview: "Fighting crime full-time as Spider-Man in a world that doesn't remember him..." },
+            { id: 2, title: "The Hating Game", rating: "7.8", year: "2026", poster: "https://image.tmdb.org/t/p/w500/2vFuG6bWGyQUzYS9d69E5l85nIz.jpg", overview: "An office romance full of tension and competitive spirit." },
+            { id: 3, title: "Clayface", rating: "7.3", year: "2026", poster: "https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg", overview: "A dark thriller following the transformation of a tragic character." },
+            { id: 4, title: "By Any Means", rating: "6.6", year: "2026", poster: "https://image.tmdb.org/t/p/w500/5vHssUeXnCSbTFMc4ah37qUPL5v.jpg", overview: "Action-packed feature film highlighting high-stakes negotiations." }
+        ];
 
-  <script>
-    /* =========================================================
-       TITAN API INTEGRATION & APPLICATION LOGIC
-       ========================================================= */
-    const TITAN_CONFIG = {
-      tmdbBase: "https://api.themoviedb.org/3",
-      tmdbImageBase: "https://image.tmdb.org/t/p/",
-      vidsrcBase: "https://vidsrc.sh",
-      tmdbApiKey: "c16dc0e5216853e7589c24794cfe9e68",
-      language: "en-US"
-    };
-
-    const TITAN_API = (() => {
-      const cache = new Map();
-
-      async function request(url) {
-        if (cache.has(url)) return cache.get(url);
-        const response = await fetch(url, { headers: { Accept: "application/json" } });
-        if (!response.ok) throw new Error(`API request failed: ${response.status}`);
-        const data = await response.json();
-        cache.set(url, data);
-        return data;
-      }
-
-      function tmdbUrl(path, params = {}) {
-        const url = new URL(TITAN_CONFIG.tmdbBase + path);
-        url.searchParams.set("api_key", TITAN_CONFIG.tmdbApiKey);
-        url.searchParams.set("language", TITAN_CONFIG.language);
-        for (const [key, value] of Object.entries(params)) {
-          if (value) url.searchParams.set(key, value);
+        function renderGrid() {
+            const grid = document.getElementById('trendingGrid');
+            grid.innerHTML = sampleMovies.map(movie => `
+                <div class="card" onclick="openModal('${movie.title}', '${movie.rating}', '${movie.year}', '${movie.poster}', '${movie.overview}')">
+                    <span class="rating-badge"><i class="fas fa-star" style="color:#ffd700; margin-left:3px;"></i>${movie.rating}</span>
+                    <img src="${movie.poster}" alt="${movie.title}">
+                    <div class="card-title">${movie.title}</div>
+                </div>
+            `).join('');
         }
-        return url.toString();
-      }
 
-      function normalize(item, type) {
-        return {
-          id: item.id,
-          type: type || item.media_type || 'movie',
-          title: item.title || item.name || "Untitled",
-          description: item.overview || "No description available.",
-          poster: item.poster_path ? TITAN_CONFIG.tmdbImageBase + "w500" + item.poster_path : "",
-          backdrop: item.backdrop_path ? TITAN_CONFIG.tmdbImageBase + "original" + item.backdrop_path : "",
-          year: (item.release_date || item.first_air_date || "").slice(0, 4),
-          rating: Number(item.vote_average || 0).toFixed(1)
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const grid = document.getElementById('trendingGrid');
+            if (!query) {
+                renderGrid();
+                return;
+            }
+            const filtered = sampleMovies.filter(m => m.title.toLowerCase().includes(query));
+            grid.innerHTML = filtered.length ? filtered.map(movie => `
+                <div class="card" onclick="openModal('${movie.title}', '${movie.rating}', '${movie.year}', '${movie.poster}', '${movie.overview}')">
+                    <span class="rating-badge">${movie.rating}</span>
+                    <img src="${movie.poster}" alt="${movie.title}">
+                    <div class="card-title">${movie.title}</div>
+                </div>
+            `).join('') : '<p style="grid-column: 1/-1; text-align:center; color:#aaa; padding:20px;">لا توجد نتائج مطابقة</p>';
+        }
+
+        function openModal(title, rating, year, poster, overview) {
+            const modal = document.getElementById('movieModal');
+            const body = document.getElementById('modalBody');
+            body.innerHTML = `
+                <img src="${poster}" style="width:100%; height:250px; object-fit:cover;">
+                <div style="padding:20px;">
+                    <h2 style="color:#fff; margin-bottom:10px;">${title}</h2>
+                    <p style="color:#aaa; font-size:0.9rem; margin-bottom:15px;">${year} &bull; <span style="color:#ffd700;">★ ${rating}</span></p>
+                    <p style="color:#ddd; font-size:0.95rem; line-height:1.5; margin-bottom:20px;">${overview}</p>
+                    <button style="width:100%; background:var(--primary-red); color:#fff; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:1rem; cursor:pointer;"><i class="fas fa-play" style="margin-left:8px;"></i>تشغيل الآن</button>
+                </div>
+            `;
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('movieModal').style.display = 'none';
+        }
+
+        // Initialisation au chargement
+        window.onload = () => {
+            renderGrid();
         };
-      }
-
-      async function trending() {
-        const data = await request(tmdbUrl("/trending/all/week"));
-        return (data.results || []).map(item => normalize(item, item.media_type));
-      }
-
-      async function popularMovies() {
-        const data = await request(tmdbUrl("/movie/popular"));
-        return (data.results || []).map(item => normalize(item, "movie"));
-      }
-
-      function embedUrl({ id, type = "movie", season, episode }) {
-        let path = type === "movie" ? `/embed/movie/${id}` : (season && episode ? `/embed/tv/${id}/${season}/${episode}` : `/embed/tv/${id}`);
-        return `${TITAN_CONFIG.vidsrcBase}${path}`;
-      }
-
-      return { trending, popularMovies, embedUrl };
-    })();
-
-    // UI RENDERERS & STATE
-    const state = {
-      favorites: JSON.parse(localStorage.getItem("titan_favorites") || "[]")
-    };
-
-    function showToast(message, type = "success") {
-      const region = document.getElementById("toastRegion");
-      const toast = document.createElement("div");
-      toast.className = `toast ${type}`;
-      toast.textContent = message;
-      region.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
-    }
-
-    function createCard(item) {
-      const isFav = state.favorites.some(f => f.id === item.id);
-      const card = document.createElement("div");
-      card.className = "poster-card";
-      card.innerHTML = `
-        <div class="poster-image-wrap">
-          <img class="poster-image" src="${item.poster}" alt="${item.title}" loading="lazy">
-          <button class="poster-favorite ${isFav ? 'is-favorite' : ''}" title="Favorite">♥</button>
-          <div class="poster-hover">
-            <div class="poster-hover-rating">⭐ ${item.rating}</div>
-          </div>
-        </div>
-        <div class="poster-title">${item.title}</div>
-        <div class="poster-meta"><span>${item.year}</span><span>${item.type.toUpperCase()}</span></div>
-      `;
-
-      card.querySelector(".poster-favorite").addEventListener("click", (e) => {
-        e.stopPropagation();
-        toggleFavorite(item);
-      });
-
-      card.addEventListener("click", () => openPlayer(item));
-      return card;
-    }
-
-    function toggleFavorite(item) {
-      const index = state.favorites.findIndex(f => f.id === item.id);
-      if (index > -1) {
-        state.favorites.splice(index, 1);
-        showToast("Removed from My List");
-      } else {
-        state.favorites.push(item);
-        showToast("Added to My List");
-      }
-      localStorage.setItem("titan_favorites", JSON.stringify(state.favorites));
-      // Refresh current view if needed
-    }
-
-    function openPlayer(item) {
-      const modal = document.getElementById("modalBackdrop");
-      const content = document.getElementById("modalContent");
-      const url = TITAN_API.embedUrl({ id: item.id, type: item.type });
-
-      content.innerHTML = `
-        <button class="modal-close" id="modalClose">×</button>
-        <div class="player-shell">
-          <div class="player-header">
-            <h3 class="player-title">${item.title}</h3>
-          </div>
-          <div class="player-frame-wrap">
-            <iframe class="player-frame" src="${url}" allowfullscreen></iframe>
-          </div>
-        </div>
-      `;
-      modal.classList.remove("hidden");
-      document.body.classList.add("modal-open");
-
-      document.getElementById("modalClose").onclick = closeModal;
-    }
-
-    function closeModal() {
-      document.getElementById("modalBackdrop").classList.add("hidden");
-      document.body.classList.remove("modal-open");
-      document.getElementById("modalContent").innerHTML = "";
-    }
-
-    async function initApp() {
-      try {
-        const trendingList = await TITAN_API.trending();
-        const popularList = await TITAN_API.popularMovies();
-
-        const trendingShelf = document.getElementById("trendingShelf");
-        const popularShelf = document.getElementById("popularMoviesShelf");
-
-        trendingList.forEach(item => trendingShelf.appendChild(createCard(item)));
-        popularList.forEach(item => popularShelf.appendChild(createCard(item)));
-      } catch (err) {
-        showToast("Failed to load TMDB data. Check API key.", "error");
-      }
-    }
-
-    window.addEventListener("DOMContentLoaded", initApp);
-  </script>
+    </script>
 </body>
 </html>
+        // --- SYSTÈME D'ACTUALISATION AUTOMATIQUE (Chaque jour à 12h00) ---
+        function checkDailyRefresh() {
+            const lastRefresh = localStorage.getItem('titan_last_refresh');
+            const today = new Date().toDateString();
+
+            // Vérification de la date actuelle
+            if (lastRefresh !== today) {
+                const now = new Date();
+                // Si l'heure actuelle a dépassé 12h00
+                if (now.getHours() >= 12) {
+                    refreshTopTrendingContent();
+                    localStorage.setItem('titan_last_refresh', today);
+                }
+            }
+        }
+
+        function refreshTopTrendingContent() {
+            console.log("TITAN: Actualisation quotidienne du contenu le plus vu effectuée avec succès à 12:00.");
+            // Mélange aléatoire pour simuler le changement des tendances quotidiennes
+            sampleMovies.sort(() => Math.random() - 0.5);
+            renderGrid();
+        }
+
+        // --- GESTION DE LA BIBLIOTHÈQUE / WATCHLIST (Local Storage) ---
+        function getWatchlist() {
+            return JSON.parse(localStorage.getItem('titan_watchlist')) || [];
+        }
+
+        function toggleWatchlist(movieId) {
+            let watchlist = getWatchlist();
+            const index = watchlist.indexOf(movieId);
+            if (index === -1) {
+                watchlist.push(movieId);
+                alert("تمت إضافة الفيلم إلى مكتبتك بنجاح.");
+            } else {
+                watchlist.splice(index, 1);
+                alert("تمت إزالة الفيلم من مكتبتك.");
+            }
+            localStorage.setItem('titan_watchlist', JSON.stringify(watchlist));
+        }
+
+        // --- LECTEUR VIDÉO INTERACTIF ---
+        function playVideo(title) {
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div style="position:relative; padding-top:56.25%; background:#000;">
+                    <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" 
+                            style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" 
+                            allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                </div>
+                <div style="padding:15px; text-align:center;">
+                    <h3 style="color:#fff;">جاري عرض: ${title}</h3>
+                    <p style="color:#aaa; font-size:0.85rem; margin-top:5px;">سيرفر البث الرئيسي • جودة عالية 4K</p>
+                    <button onclick="closeModal()" style="margin-top:15px; background:#333; color:#fff; border:none; padding:8px 20px; border-radius:4px; cursor:pointer;">إغلاق</button>
+                </div>
+            `;
+        }
+
+        // Vérification de l'actualisation au chargement de la page
+        setInterval(checkDailyRefresh, 60000); // Vérifie chaque minute
+        checkDailyRefresh();
+            <!-- Catégories et Filtres Dynamiques -->
+    <style>
+        .category-scroll {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 0;
+            margin-bottom: 15px;
+            scrollbar-width: none; /* Firefox */
+        }
+        .category-scroll::-webkit-scrollbar {
+            display: none; /* Chrome / Safari */
+        }
+        .chip {
+            background-color: #222;
+            color: var(--text-gray);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            cursor: pointer;
+            border: 1px solid #333;
+            transition: all 0.3s ease;
+        }
+        .chip.active, .chip:hover {
+            background-color: var(--primary-red);
+            color: var(--text-white);
+            border-color: var(--primary-red);
+        }
+    </style>
+
+    <div class="category-scroll" id="categoryChips">
+        <div class="chip active" onclick="filterCategory('all', this)">الكل</div>
+        <div class="chip" onclick="filterCategory('kdrama', this)">كوريا دراما (K-Drama)</div>
+        <div class="chip" onclick="filterCategory('action', this)">أكشن</div>
+        <div class="chip" onclick="filterCategory('scifi', this)">خيال علمي</div>
+        <div class="chip" onclick="filterCategory('top_playlist', this)">Top Playlist</div>
+    </div>
+            // Data étendue pour les différentes catégories
+        const categoryData = {
+            kdrama: [
+                { id: 101, title: "Squid Game: Season 2", rating: "8.8", year: "2025", poster: "https://image.tmdb.org/t/p/w500/dA3v331fOf33Kx1q9y9G0m0E.jpg", overview: "La suite palpitante du phénomène mondial sud-coréen." },
+                { id: 102, title: "All of Us Are Dead", rating: "8.4", year: "2024", poster: "https://image.tmdb.org/t/p/w500/8O392z25s4050G235f3G.jpg", overview: "Des étudiants luttent pour leur survie face à une épidémie de zombies." }
+            ],
+            action: [
+                { id: 201, title: "John Wick: Chapter 4", rating: "8.9", year: "2023", poster: "https://image.tmdb.org/t/p/w500/vZloFAK7N33S228s4050G.jpg", overview: "John Wick découvre un moyen de vaincre la Grande Table." },
+                { id: 202, title: "Extraction 2", rating: "7.9", year: "2023", poster: "https://image.tmdb.org/t/p/w500/7i88z25s4050G235f3G.jpg", overview: "Tyler Rake entreprend une nouvelle mission à haut risque." }
+            ],
+            scifi: [
+                { id: 301, title: "Dune: Part Two", rating: "8.7", year: "2024", poster: "https://image.tmdb.org/t/p/w500/1pdfLvkA32328s4050G.jpg", overview: "Paul Atréides s'unit à Chani et aux Fremen pour mener la révolte." },
+                { id: 302, title: "Interstellar", rating: "8.6", year: "2014", poster: "https://image.tmdb.org/t/p/w500/gEU228s4050G235f3G.jpg", overview: "Une équipe d'explorateurs voyage à travers un trou de ver." }
+            ],
+            top_playlist: [
+                { id: 401, title: "Marvel Cinematic Universe", rating: "9.1", year: "MCU", poster: "https://image.tmdb.org/t/p/w500/qNBAXBIQlnOtrVvAWMHtDC3g3RC.jpg", overview: "Collection complète des films et séries de l'univers Marvel." },
+                { id: 402, title: "DC Extended Universe", rating: "8.5", year: "DCEU", poster: "https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg", overview: "L'univers cinématographique des super-héros DC." }
+            ]
+        };
+
+        function filterCategory(cat, chipElement) {
+            // Mettre à jour la puce active
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            chipElement.classList.add('active');
+
+            const grid = document.getElementById('trendingGrid');
+            let itemsToDisplay = [];
+
+            if (cat === 'all') {
+                itemsToDisplay = sampleMovies;
+            } else {
+                itemsToDisplay = categoryData[cat] || [];
+            }
+
+            if (itemsToDisplay.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#aaa; padding:20px;">لا يوجد محتوى متوفر حالياً</p>';
+                return;
+            }
+
+            grid.innerHTML = itemsToDisplay.map(movie => `
+                <div class="card" onclick="openModal('${movie.title}', '${movie.rating}', '${movie.year}', '${movie.poster}', '${movie.overview.replace(/'/g, "\\'")}')">
+                    <span class="rating-badge"><i class="fas fa-star" style="color:#ffd700; margin-left:3px;"></i>${movie.rating}</span>
+                    <img src="${movie.poster}" alt="${movie.title}" onerror="this.src='https://via.placeholder.com/150x225/181818/ffffff?text=Poster'">
+                    <div class="card-title">${movie.title}</div>
+                </div>
+            `).join('');
+        }
+                // --- GESTION DE L'AFFICHAGE DE LA BIBLIOTHÈQUE ---
+        function renderLibrary() {
+            const grid = document.getElementById('trendingGrid');
+            const watchlistIds = getWatchlist();
+            
+            // Combiner toutes les sources pour retrouver les films enregistrés
+            const allAvailableItems = [...sampleMovies, ...categoryData.kdrama, ...categoryData.action, ...categoryData.scifi, ...categoryData.top_playlist];
+            const savedMovies = allAvailableItems.filter(m => watchlistIds.includes(m.id) || watchlistIds.includes(String(m.id)));
+
+            document.querySelector('.section-title span').innerText = "قائمتي المفضلة (Library)";
+
+            if (savedMovies.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#aaa; padding:30px;">لم تقم بإضافة أي فيلم أو مسلسل إلى مكتبتك بعد.</p>';
+                return;
+            }
+
+            grid.innerHTML = savedMovies.map(movie => `
+                <div class="card" onclick="openModal('${movie.title}', '${movie.rating}', '${movie.year}', '${movie.poster}', '${movie.overview.replace(/'/g, "\\'")}')">
+                    <span class="rating-badge"><i class="fas fa-star" style="color:#ffd700; margin-left:3px;"></i>${movie.rating}</span>
+                    <img src="${movie.poster}" alt="${movie.title}">
+                    <div class="card-title">${movie.title}</div>
+                </div>
+            `).join('');
+        }
+            <!-- Hero Slider / Carrousel à défilement horizontal -->
+    <style>
+        .hero-slider {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            padding: 10px 0;
+            margin-bottom: 20px;
+            scrollbar-width: none;
+        }
+        .hero-slider::-webkit-scrollbar {
+            display: none;
+        }
+        .hero-card {
+            flex: 0 0 85%;
+            scroll-snap-align: center;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            height: 220px;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        }
+        .hero-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 15px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.95));
+        }
+        .hero-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+        .hero-meta {
+            font-size: 0.8rem;
+            color: #ccc;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+    </style>
+
+    <div class="hero-slider" id="heroSlider">
+        <div class="hero-card" style="background-image: url('https://image.tmdb.org/t/p/w500/qNBAXBIQlnOtrVvAWMHtDC3g3RC.jpg');" onclick="openModal('Spider-Man: Brand New Day', '8.5', '2026', 'https://image.tmdb.org/t/p/w500/qNBAXBIQlnOtrVvAWMHtDC3g3RC.jpg', 'Fighting crime full-time as Spider-Man in a world that does not remember him...')">
+            <div class="hero-overlay">
+                <div class="hero-title">Spider-Man: Brand New Day</div>
+                <div class="hero-meta">
+                    <span>2026</span> &bull; 
+                    <span style="color:#ffd700;"><i class="fas fa-star"></i> 8.5</span> &bull; 
+                    <span>Spider-Man Collection</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-card" style="background-image: url('https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg');" onclick="openModal('Clayface', '7.3', '2026', 'https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg', 'A dark thriller following the transformation of a tragic character.')">
+            <div class="hero-overlay">
+                <div class="hero-title">Clayface</div>
+                <div class="hero-meta">
+                    <span>2026</span> &bull; 
+                    <span style="color:#ffd700;"><i class="fas fa-star"></i> 7.3</span> &bull; 
+                    <span>Thriller / Action</span>
+                </div>
+            </div>
+        </div>
+    </div>
+            // --- MODULE DISCOVER / EXPLORATION DYNAMIQUE ---
+        function renderDiscover() {
+            document.querySelector('.section-title span').innerText = "اكتشف الجديد المميز (Discover)";
+            const grid = document.getElementById('trendingGrid');
+            
+            // Rassemblement et affichage de tout le catalogue filtré
+            const discoverItems = [...categoryData.kdrama, ...categoryData.scifi, ...categoryData.action];
+            grid.innerHTML = discoverItems.map(movie => `
+                <div class="card" onclick="openModal('${movie.title}', '${movie.rating}', '${movie.year}', '${movie.poster}', '${movie.overview.replace(/'/g, "\\'")}')">
+                    <span class="rating-badge"><i class="fas fa-star" style="color:#ffd700; margin-left:3px;"></i>${movie.rating}</span>
+                    <img src="${movie.poster}" alt="${movie.title}">
+                    <div class="card-title">${movie.title}</div>
+                </div>
+            `).join('');
+        }
+سأرسل لك الآن الجزء التاسع الأخير متضمناً مشغل الفيديو التفاعلي، مع الشرح والتعليقات باللغة الإنجليزية كما طلبت.
+استبدل هذا الكود في نهاية ملفك أو ألحقه به:
+        // --- ADVANCED INTERACTIVE VIDEO PLAYER ---
+        function playVideo(title) {
+            const modalBody = document.getElementById('modalBody');
+            
+            // Video Player HTML Structure with Server Selection & Subtitles
+            modalBody.innerHTML = `
+                <div class="video-player-container" style="position:relative; width:100%; padding-top:56.25%; background:#000;">
+                    <iframe id="videoIframe" 
+                            src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&enablejsapi=1" 
+                            style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" 
+                            allow="autoplay; encrypted-media; fullscreen" 
+                            allowfullscreen>
+                    </iframe>
+                </div>
+                
+                <div class="player-controls" style="padding:20px; background:#141414; color:#fff;">
+                    <h3 style="margin-bottom:8px; font-size:1.2rem;">Playing: ${title}</h3>
+                    <p style="color:#aaa; font-size:0.85rem; margin-bottom:20px;">Streaming Server: <span style="color:var(--primary-red);">CDN-VIP Stream (4K)</span></p>
+                    
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; font-size:0.8rem; color:#888; margin-bottom:8px;">SELECT SERVER SOURCE:</label>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                            <button onclick="changeServer('https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1')" style="background:#222; border:1px solid var(--primary-red); color:#fff; padding:10px; border-radius:4px; cursor:pointer; font-weight:bold;">Server Alpha (Fast)</button>
+                            <button onclick="changeServer('https://www.youtube.com/embed/kJQP7kiw5Fk?autoplay=1')" style="background:#222; border:1px solid #333; color:#aaa; padding:10px; border-radius:4px; cursor:pointer;">Server Beta (Backup)</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block; font-size:0.8rem; color:#888; margin-bottom:8px;">SUBTITLES:</label>
+                        <select onchange="console.log('Subtitles switched to:', this.value)" style="width:100%; padding:10px; background:#222; color:#fff; border:1px solid #333; border-radius:4px; outline:none;">
+                            <option value="off">Off</option>
+                            <option value="ar" selected>Arabic (العربية)</option>
+                            <option value="en">English</option>
+                            <option value="fr">French (Français)</option>
+                        </select>
+                    </div>
+
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="toggleFullScreen()" style="flex:1; background:#333; color:#fff; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer;"><i class="fas fa-expand"></i> Fullscreen</button>
+                        <button onclick="closeModal()" style="flex:1; background:var(--primary-red); color:#fff; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer;">Close Player</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function changeServer(serverUrl) {
+            const iframe = document.getElementById('videoIframe');
+            if (iframe) {
+                iframe.src = serverUrl;
+                alert("Server switched successfully.");
+            }
+        }
+
+        function toggleFullScreen() {
+            const container = document.querySelector('.video-player-container');
+            if (!document.fullscreenElement) {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+
