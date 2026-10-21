@@ -1,1661 +1,1244 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#090909">
-<meta name="description" content="TITAN Part 11 — a complete cinematic discovery experience with interactive series seasons and episodes.">
-<title>TITAN Part 11 — Cinema Experience · Black Edition</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
-<style>
-:root {
-  color-scheme: dark;
-  --bg: #050505;
-  --panel: #151515;
-  --panel2: #202020;
-  --text: #f7f7f7;
-  --muted: #b3b3b3;
-  --red: #e50914;
-  --line: #ffffff19;
-  --ease: cubic-bezier(.2,.75,.25,1);
-  --nav: 76px;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-  scroll-padding-top: 90px;
-}
-
-body {
-  margin: 0;
-  background: #050505;
-  color-scheme: dark;
-  color: var(--text);
-  font-family: Inter, system-ui, sans-serif;
-  overflow-x: hidden;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible {
-  outline: 2px solid white;
-  outline-offset: 3px;
-}
-
-.topbar {
-  height: var(--nav);
-  position: fixed;
-  inset: 0 0 auto;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  gap: 30px;
-  padding: 0 4.5%;
-  background: linear-gradient(180deg,#080808f7,#080808dc);
-  backdrop-filter: blur(18px);
-  transition: background .3s,border-color .3s;
-  border-bottom: 1px solid transparent;
-}
-
-.topbar.scrolled {
-  background: #090909f5;
-  border-color: #ffffff10;
-}
-
-.brand {
-  font-size: 27px;
-  font-weight: 900;
-  letter-spacing: 2px;
-  color: var(--red);
-  line-height: 1;
-  text-shadow: 0 0 22px #e5091430;
-}
-
-.brand span {
-  color: #fff;
-  font-size: 10px;
-  letter-spacing: 3px;
-  display: block;
-  margin-top: 5px;
-}
-
-.navlinks {
-  display: flex;
-  align-items: center;
-  gap: 23px;
-  color: #ddd;
-  font-size: 13px;
-}
-
-.navlinks a {
-  transition: color .2s;
-}
-
-.navlinks a:hover,
-.navlinks a.active {
-  color: #fff;
-  font-weight: 700;
-}
-
-.navright {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.iconbtn {
-  border: 0;
-  background: transparent;
-  color: #fff;
-  padding: 8px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  transition: background .2s;
-}
-
-.iconbtn:hover {
-  background: #ffffff16;
-}
-
-.iconbtn svg {
-  width: 21px;
-  height: 21px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.8;
-}
-
-.searchbox {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  border: 1px solid #ffffff9c;
-  background: #080808d9;
-  padding: 7px 10px;
-  max-width: 240px;
-  transition: max-width .25s;
-}
-
-.searchbox input {
-  width: 170px;
-  background: transparent;
-  border: 0;
-  outline: 0;
-  color: #fff;
-  font-size: 13px;
-}
-
-.searchbox input::placeholder {
-  color: #bcbcbc;
-}
-
-.avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 5px;
-  background: #243b70;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 0;
-  border: 0;
-  box-shadow: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.avatar:before {
-  content: "";
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  top: 6px;
-  border-radius: 50%;
-  background: #c7d2e8;
-}
-
-.avatar:after {
-  content: "";
-  position: absolute;
-  width: 19px;
-  height: 12px;
-  bottom: 2px;
-  border-radius: 10px 10px 3px 3px;
-  background: #c7d2e8;
-}
-
-.mobilemenu {
-  display: none;
-}
-
-.hero {
-  height: min(850px,100vh);
-  min-height: 650px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  padding: 100px 5% 110px;
-  isolation: isolate;
-  overflow: hidden;
-}
-
-.hero-art {
-  position: absolute;
-  inset: 0;
-  z-index: -3;
-  background-size: cover;
-  background-position: center 34%;
-  transform: scale(1.02);
-  transition: background-image .7s,transform 7s var(--ease);
-  animation: heroDrift 22s ease-in-out infinite alternate;
-}
-
-.hero:before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  background:
-    linear-gradient(
-      90deg,
-      #090909 0%,
-      #090909ef 19%,
-      #0909099c 45%,
-      #09090916 76%
-    ),
-    linear-gradient(
-      0deg,
-      #090909 0%,
-      transparent 42%,
-      #0909093b 100%
-    );
-}
-
-.hero:after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: radial-gradient(
-    ellipse at 70% 42%,
-    transparent 0%,
-    #09090912 48%,
-    #0909095e 100%
-  );
-  pointer-events: none;
-}
-
-.hero-copy {
-  max-width: 570px;
-  margin-top: 50px;
-  animation: rise .8s var(--ease);
-}
-
-.eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  text-transform: uppercase;
-  font-size: 11px;
-  letter-spacing: 3px;
-  font-weight: 800;
-  color: #fff;
-  margin-bottom: 19px;
-}
-
-.eyebrow-mark {
-  width: 22px;
-  height: 22px;
-  border: 1px solid var(--red);
-  color: var(--red);
-  display: grid;
-  place-items: center;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.hero-kicker {
-  font-size: 12px;
-  color: #f2f2f2;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  font-weight: 700;
-  margin-bottom: 12px;
-}
-
-.hero h1 {
-  font-size: clamp(44px,6.5vw,86px);
-  letter-spacing: -4px;
-  line-height: .93;
-  margin: 0 0 22px;
-  font-weight: 900;
-  text-transform: uppercase;
-  text-wrap: balance;
-  text-shadow: 0 5px 28px #0008;
-}
-
-.hero-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  color: #eee;
-  font-size: 13px;
-  margin-bottom: 17px;
-}
-
-.match {
-  color: #54d68a;
-  font-weight: 800;
-}
-
-.quality {
-  font-size: 10px;
-  border: 1px solid #ffffff75;
-  padding: 3px 5px;
-  border-radius: 3px;
-  font-weight: 800;
-}
-
-.hero-desc {
-  font-size: 15px;
-  line-height: 1.75;
-  color: #f0f0f0;
-  max-width: 520px;
-  margin: 0 0 25px;
-  text-shadow: 0 1px 8px #000;
-}
-
-.hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.btn {
-  border: 0;
-  border-radius: 4px;
-  padding: 12px 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-size: 14px;
-  font-weight: 800;
-  transition: transform .2s,background .2s;
-  min-height: 44px;
-}
-
-.btn:hover {
-  transform: scale(1.035);
-}
-
-.btn svg {
-  width: 21px;
-  height: 21px;
-  fill: currentColor;
-  stroke: currentColor;
-}
-
-.btn-primary {
-  background: #fff;
-  color: #111;
-}
-
-.btn-primary:hover {
-  background: #e6e6e6;
-}
-
-.btn-secondary {
-  background: #6d6d6ebd;
-  color: #fff;
-  backdrop-filter: blur(8px);
-}
-
-.btn-secondary:hover {
-  background: #555;
-}
-
-.round-action {
-  width: 43px;
-  height: 43px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  border: 1px solid #ffffff85;
-  color: #fff;
-  background: #1117;
-  font-size: 20px;
-}
-
-.round-action:hover {
-  background: #ffffff24;
-}
-
-.hero-bottom {
-  position: absolute;
-  bottom: 60px;
-  left: 5%;
-  right: 5%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.hero-dots {
-  display: flex;
-  gap: 7px;
-  align-items: center;
-}
-
-.hero-dot {
-  height: 4px;
-  width: 18px;
-  border: 0;
-  border-radius: 5px;
-  background: #ffffff5e;
-  padding: 0;
-  transition: width .3s,background .3s;
-}
-
-.hero-dot.active {
-  width: 36px;
-  background: #fff;
-}
-
-.maturity {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #1116;
-  border-left: 3px solid #fff;
-  padding: 9px 19px 9px 12px;
-  color: #eee;
-  font-size: 13px;
-  backdrop-filter: blur(6px);
-}
-
-.rows {
-  position: relative;
-  z-index: 2;
-  margin-top: -48px;
-  padding-bottom: 70px;
-}
-
-.shelf {
-  margin: 0 0 37px;
-  padding: 0 4.5%;
-  position: relative;
-}
-
-.shelf-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 13px;
-  gap: 12px;
-}
-
-.shelf-title {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -.5px;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
-.shelf-title small {
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
-.seeall {
-  font-size: 12px;
-  color: #ddd;
-  opacity: 0;
-  transition: opacity .2s;
-}
-
-.shelf:hover .seeall {
-  opacity: 1;
-}
-
-.rail-wrap {
-  position: relative;
-}
-
-.rail {
-  display: flex;
-  gap: 9px;
-  overflow-x: auto;
-  overflow-y: visible;
-  padding: 8px 2px 22px;
-  scroll-behavior: smooth;
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-}
-
-.rail::-webkit-scrollbar {
-  display: none;
-}
-
-.poster {
-  flex: 0 0 clamp(142px,15.5vw,218px);
-  aspect-ratio: 2/3;
-  position: relative;
-  border-radius: 5px;
-  overflow: visible;
-  background: #202020;
-  transition: transform .35s var(--ease),z-index .1s;
-  transform-origin: center center;
-  isolation: isolate;
-}
-
-.poster img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  border-radius: 5px;
-  box-shadow: 0 6px 20px #0007;
-  transition: filter .3s,box-shadow .3s;
-}
-
-.poster:hover,
-.poster:focus-within {
-  z-index: 8;
-  transform: scale(1.075) translateY(-3px);
-}
-
-.poster:hover img {
-  box-shadow: 0 18px 36px #000a;
-  filter: brightness(.78);
-}
-
-.poster-overlay {
-  position: absolute;
-  inset: 0;
-  border-radius: 5px;
-  opacity: 0;
-  transition: opacity .2s;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 12px;
-  background: linear-gradient(
-    0deg,
-    #050505f5 0%,
-    #0505051a 65%,
-    transparent
-  );
-}
-
-.poster:hover .poster-overlay,
-.poster:focus-within .poster-overlay {
-  opacity: 1;
-}
-
-.poster-title {
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1.3;
-  margin-bottom: 6px;
-}
-
-.poster-meta {
-  font-size: 10px;
-  color: #ddd;
-  display: flex;
-  gap: 7px;
-  align-items: center;
-  margin-bottom: 9px;
-}
-
-.poster-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.mini-btn {
-  width: 30px;
-  height: 30px;
-  border: 1px solid #ffffff88;
-  border-radius: 50%;
-  background: #ffffff12;
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 14px;
-}
-
-.mini-btn.play {
-  background: #fff;
-  color: #111;
-  border-color: #fff;
-}
-
-.mini-btn[data-action="list"] {
-  font-size: 18px;
-  color: #fff;
-}
-
-.mini-btn[data-action="list"]:hover {
-  color: #ffd166;
-  border-color: #ffd166;
-}
-
-.mini-btn:hover {
-  border-color: #fff;
-  background: #ffffff2b;
-}
-
-.mini-btn.play:hover {
-  background: #ddd;
-}
-
-.tag {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: #e50914;
-  color: white;
-  font-size: 9px;
-  font-weight: 900;
-  padding: 5px 7px;
-  border-radius: 2px;
-  letter-spacing: .5px;
-}
-
-/* Continue in Part 2 */
-</style>
-</head 
-  <body>
-
-<!-- ==========================================
-     TITAN MAIN NAVIGATION
-========================================== -->
-
-<header class="topbar" id="topbar">
-  <a href="#home" class="brand" aria-label="TITAN Home">
-    TITAN
-    <span>CINEMA EXPERIENCE</span>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta name="theme-color" content="#090b10">
+
+  <meta
+    name="description"
+    content="TITAN — Discover movies, explore series, and find your next great watch."
+  >
+
+  <title>TITAN — Your Next Great Watch</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+
+      --background: #090b10;
+      --background-soft: #10131b;
+      --panel: #151924;
+      --panel-raised: #202637;
+
+      --text: #f6f7fb;
+      --muted: #9ba3b7;
+      --line: rgba(255, 255, 255, 0.1);
+
+      --accent: #e6bd65;
+      --accent-hover: #f5d58e;
+      --brand: #ef2941;
+
+      --radius: 14px;
+      --navigation-height: 76px;
+      --maximum-width: 1500px;
+      --poster-width: 170px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-padding-top: 95px;
+    }
+
+    body {
+      margin: 0;
+
+      background: var(--background);
+      color: var(--text);
+
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      font-size: 15px;
+      line-height: 1.65;
+
+      padding-bottom: 85px;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button,
+    a {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button {
+      color: inherit;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 4px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: -100px;
+      left: 15px;
+
+      z-index: 200;
+
+      background: #ffffff;
+      color: #111111;
+
+      padding: 12px 18px;
+      border-radius: 8px;
+    }
+
+    .skip-link:focus {
+      top: 10px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+
+      z-index: 30;
+
+      background: rgba(9, 11, 16, 0.96);
+
+      border-bottom: 1px solid var(--line);
+
+      backdrop-filter: blur(16px);
+    }
+
+    .navigation {
+      max-width: var(--maximum-width);
+
+      margin: auto;
+      padding: 15px 24px;
+
+      display: flex;
+      align-items: center;
+      gap: 25px;
+    }
+
+    .brand {
+      border: 0;
+      padding: 0;
+
+      background: transparent;
+
+      color: var(--brand);
+
+      font-size: 30px;
+      font-weight: 950;
+      letter-spacing: -1px;
+    }
+
+    .brand-caption {
+      color: var(--muted);
+
+      font-size: 9px;
+      letter-spacing: 2px;
+    }
+
+    .navigation-links {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+
+      margin-left: auto;
+    }
+
+    .navigation-links button {
+      background: transparent;
+      border: 0;
+
+      padding: 9px 12px;
+
+      color: #bdc3d0;
+      font-size: 13px;
+    }
+
+    button[aria-current="page"] {
+      color: var(--accent);
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+
+      min-height: 43px;
+
+      padding: 10px 17px;
+
+      border: 1px solid var(--line);
+      border-radius: 7px;
+
+      background: var(--panel);
+      color: var(--text);
+
+      font-size: 13px;
+      font-weight: 650;
+
+      text-decoration: none;
+    }
+
+    .button:hover:not(:disabled) {
+      background: var(--panel-raised);
+    }
+
+    .button-primary {
+      color: #17130b;
+      background: var(--accent);
+
+      border-color: var(--accent);
+    }
+
+    .button-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .button-small {
+      min-height: 34px;
+
+      padding: 7px 11px;
+      font-size: 11px;
+    }
+
+    main,
+    .footer-inner {
+      max-width: var(--maximum-width);
+      margin: auto;
+      padding: 24px;
+    }
+
+    main {
+      min-height: 65vh;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+
+      font-size: 10px;
+      font-weight: 700;
+
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 8px 0 24px;
+
+      font-size: clamp(28px, 4vw, 43px);
+      line-height: 1.12;
+      letter-spacing: -1.2px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .hero {
+      position: relative;
+
+      min-height: 550px;
+
+      display: flex;
+      align-items: flex-end;
+
+      overflow: hidden;
+
+      background:
+        radial-gradient(
+          circle at 70% 20%,
+          #524126,
+          transparent 60%
+        ),
+        #151924;
+
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+
+    .hero-art {
+      position: absolute;
+      inset: 0;
+
+      width: 100%;
+      height: 100%;
+
+      object-fit: cover;
+    }
+
+    .hero::after {
+      content: "";
+
+      position: absolute;
+      inset: 0;
+
+      background:
+        linear-gradient(
+          90deg,
+          #090b10ee,
+          #090b1088 55%,
+          transparent
+        ),
+        linear-gradient(
+          to top,
+          #090b10f5,
+          transparent 85%
+        );
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+
+      width: min(700px, 100%);
+      padding: 43px;
+    }
+
+    .hero h2 {
+      margin: 16px 0;
+
+      font-size: clamp(35px, 5vw, 63px);
+      line-height: 1.04;
+      letter-spacing: -2px;
+
+      text-wrap: balance;
+    }
+
+    .hero-description {
+      max-width: 560px;
+
+      color: #c8cdd8;
+      font-size: 14px;
+
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+
+      overflow: hidden;
+    }
+
+    .facts,
+    .actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
+
+      margin: 17px 0;
+    }
+
+    .fact {
+      display: inline-block;
+
+      padding: 4px 8px;
+
+      border: 1px solid var(--line);
+      border-radius: 5px;
+
+      color: #d3d8e3;
+
+      font-size: 11px;
+    }
+
+    .hero-pagination {
+      display: flex;
+      justify-content: center;
+      gap: 7px;
+
+      margin: 15px 0 5px;
+    }
+
+    .hero-pagination button {
+      width: 24px;
+      height: 5px;
+
+      padding: 0;
+
+      border: 0;
+      border-radius: 10px;
+
+      background: #4b4e5b;
+    }
+
+    .hero-pagination .active {
+      width: 40px;
+      background: var(--accent);
+    }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+
+      margin: 30px 0 13px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+
+      font-size: 20px;
+      letter-spacing: -0.4px;
+    }
+
+    .shelf {
+      display: flex;
+      gap: 13px;
+
+      overflow-x: auto;
+
+      padding: 4px 1px 16px;
+
+      scroll-snap-type: x proximity;
+      scrollbar-width: thin;
+      scrollbar-color: #3d4356 transparent;
+    }
+
+    .poster-card {
+      flex: 0 0 var(--poster-width);
+      width: var(--poster-width);
+
+      min-width: 0;
+
+      border: 0;
+      padding: 0;
+
+      background: transparent;
+
+      text-align: left;
+
+      scroll-snap-align: start;
+    }
+
+    .poster-cover {
+      position: relative;
+
+      aspect-ratio: 2 / 3;
+
+      overflow: hidden;
+
+      background: #1b2030;
+
+      border: 1px solid var(--line);
+      border-radius: 9px;
+    }
+
+    .poster-cover img {
+      width: 100%;
+      height: 100%;
+
+      object-fit: cover;
+
+      transition: transform 180ms ease;
+    }
+
+    .poster-card:hover .poster-cover img {
+      transform: scale(1.04);
+    }
+
+    .poster-placeholder {
+      display: grid;
+      place-items: center;
+
+      height: 100%;
+      padding: 16px;
+
+      background:
+        linear-gradient(
+          140deg,
+          #303347,
+          #141925
+        );
+
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .poster-type {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+
+      padding: 3px 6px;
+
+      background: #090b10df;
+
+      border-radius: 4px;
+
+      font-size: 9px;
+      letter-spacing: 1px;
+    }
+
+    .poster-title {
+      display: block;
+
+      margin: 9px 0 3px;
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .poster-meta {
+      display: block;
+
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+
+      height: 4px;
+      background: var(--accent);
+    }
+
+    .poster-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          auto-fill,
+          minmax(var(--poster-width), 1fr)
+        );
+
+      gap: 24px 14px;
+    }
+
+    .poster-grid .poster-card {
+      width: 100%;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+
+      margin: 20px 0;
+    }
+
+    .toolbar input {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    input,
+    select,
+    textarea {
+      max-width: 100%;
+      min-width: 0;
+
+      border: 1px solid var(--line);
+      border-radius: 8px;
+
+      padding: 12px;
+
+      color: var(--text);
+      background: var(--panel);
+    }
+
+    .genre-bar {
+      display: flex;
+      gap: 8px;
+
+      overflow-x: auto;
+
+      margin-bottom: 20px;
+      padding-bottom: 9px;
+    }
+
+    .genre-bar button {
+      flex: 0 0 auto;
+
+      border-radius: 25px;
+      white-space: nowrap;
+    }
+
+    .genre-bar button.active {
+      color: #17130b;
+      background: var(--accent);
+    }
+
+    .panel {
+      grid-column: 1 / -1;
+
+      margin: 20px 0;
+      padding: 25px;
+
+      border: 1px solid var(--line);
+      border-radius: 12px;
+
+      background: var(--panel);
+    }
+
+    .panel h2,
+    .panel h3 {
+      margin-top: 0;
+    }
+
+    .panel p {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+
+      margin: 30px 0;
+    }
+
+    .skeleton {
+      flex: 0 0 var(--poster-width);
+
+      aspect-ratio: 2 / 3;
+
+      border-radius: 9px;
+
+      background:
+        linear-gradient(
+          100deg,
+          #151924,
+          #252c3d,
+          #151924
+        );
+
+      background-size: 200% 100%;
+
+      animation: shimmer 1.5s infinite;
+    }
+
+    dialog {
+      position: relative;
+
+      width: min(980px, 95vw);
+      max-height: 92dvh;
+
+      overflow: auto;
+
+      padding: 0;
+
+      border: 1px solid var(--line);
+      border-radius: 15px;
+
+      background: #11141d;
+      color: var(--text);
+    }
+
+    dialog::backdrop {
+      background: #000000cf;
+      backdrop-filter: blur(6px);
+    }
+
+    .dialog-close {
+      position: absolute;
+      right: 14px;
+      top: 14px;
+
+      z-index: 5;
+
+      width: 42px;
+      height: 42px;
+
+      padding: 0;
+
+      border: 1px solid var(--line);
+      border-radius: 50%;
+
+      background: #090b10e8;
+
+      font-size: 25px;
+    }
+
+    .detail-art {
+      position: relative;
+
+      height: 340px;
+
+      background: #1a2030;
+    }
+
+    .detail-art img {
+      width: 100%;
+      height: 100%;
+
+      object-fit: cover;
+    }
+
+    .detail-art::after {
+      content: "";
+
+      position: absolute;
+      inset: 50% 0 0;
+
+      background:
+        linear-gradient(
+          transparent,
+          #11141d
+        );
+    }
+
+    .detail-content,
+    .settings-content {
+      padding: 28px;
+    }
+
+    .detail-title {
+      margin: 0 0 17px;
+
+      font-size: 35px;
+      line-height: 1.1;
+      letter-spacing: -1px;
+    }
+
+    .description {
+      color: #c4cad7;
+      font-size: 14px;
+      line-height: 1.9;
+    }
+
+    .status {
+      padding: 12px 14px;
+
+      border-left: 3px solid var(--accent);
+
+      background: var(--panel);
+
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .cast-list {
+      display: flex;
+      gap: 10px;
+
+      overflow-x: auto;
+
+      padding-bottom: 10px;
+    }
+
+    .cast-person {
+      flex: 0 0 100px;
+
+      min-width: 0;
+      font-size: 11px;
+    }
+
+    .cast-person img,
+    .cast-placeholder {
+      width: 100%;
+      aspect-ratio: 2 / 3;
+
+      object-fit: cover;
+
+      border-radius: 7px;
+      background: #222939;
+    }
+
+    .cast-person strong,
+    .cast-person small {
+      display: block;
+
+      margin-top: 5px;
+      overflow-wrap: anywhere;
+    }
+
+    .cast-person small {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .season-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+
+      margin: 25px 0 15px;
+    }
+
+    .episode-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .episode-card {
+      display: grid;
+
+      grid-template-columns: 125px 1fr auto;
+      gap: 13px;
+
+      align-items: center;
+
+      width: 100%;
+
+      padding: 12px;
+
+      border: 1px solid var(--line);
+      border-radius: 9px;
+
+      background: #191e2a;
+
+      text-align: left;
+    }
+
+    .episode-card:hover {
+      background: #222a39;
+    }
+
+    .episode-image {
+      width: 125px;
+      aspect-ratio: 16 / 9;
+
+      object-fit: cover;
+
+      border-radius: 6px;
+      background: #293144;
+    }
+
+    .episode-name {
+      display: block;
+
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .episode-description {
+      display: -webkit-box;
+
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+
+      overflow: hidden;
+
+      margin-top: 5px;
+
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .player-title {
+      padding: 19px 65px 15px 22px;
+
+      border-bottom: 1px solid var(--line);
+
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .player-frame {
+      display: block;
+
+      width: 100%;
+      aspect-ratio: 16 / 9;
+
+      border: 0;
+
+      background: #000000;
+    }
+
+    .player-options {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+
+      padding: 16px 20px;
+
+      border-bottom: 1px solid var(--line);
+    }
+
+    .player-options label {
+      margin: 0;
+    }
+
+    .player-status {
+      padding: 12px 20px 20px;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+
+      margin: 17px 0;
+
+      color: #c8cfdb;
+      font-size: 12px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .note {
+      width: 100%;
+      min-height: 85px;
+    }
+
+    pre {
+      max-height: 300px;
+      overflow: auto;
+
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+
+      padding: 15px;
+
+      background: #080b12;
+
+      font-size: 11px;
+    }
+
+    .footer {
+      margin-top: 40px;
+      border-top: 1px solid var(--line);
+    }
+
+    .footer-brand {
+      color: var(--brand);
+      font-size: 25px;
+      font-weight: 900;
+    }
+
+    .footer-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+
+      margin: 18px 0;
+    }
+
+    .mobile-navigation {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+
+      z-index: 35;
+
+      display: none;
+      justify-content: space-around;
+
+      background: #10131bf5;
+      border-top: 1px solid var(--line);
+
+      padding:
+        10px
+        5px
+        calc(10px + env(safe-area-inset-bottom));
+    }
+
+    .mobile-navigation button {
+      border: 0;
+      padding: 8px 9px;
+
+      background: transparent;
+
+      font-size: 11px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      z-index: 200;
+
+      max-width: 90vw;
+
+      padding: 13px 19px;
+
+      background: #f5eddc;
+      color: #17130b;
+
+      border-radius: 8px;
+
+      font-size: 13px;
+    }
+
+    @keyframes shimmer {
+      to {
+        background-position: -200% 0;
+      }
+    }
+
+    @media (max-width: 1050px) {
+      .brand-caption {
+        display: none;
+      }
+
+      .navigation {
+        gap: 15px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      :root {
+        --poster-width: 114px;
+      }
+
+      .navigation {
+        padding: 13px 15px;
+      }
+
+      .brand {
+        font-size: 27px;
+      }
+
+      .navigation-links {
+        display: none;
+      }
+
+      #openSettings {
+        margin-left: auto;
+      }
+
+      main,
+      .footer-inner {
+        padding: 17px 11px;
+      }
+
+      h1 {
+        font-size: 26px;
+      }
+
+      .hero {
+        min-height: 460px;
+      }
+
+      .hero-content {
+        width: 100%;
+
+        padding: 20px 15px;
+        text-align: center;
+      }
+
+      .hero h2 {
+        font-size: 35px;
+        letter-spacing: -1px;
+      }
+
+      .hero .facts,
+      .hero .actions {
+        justify-content: center;
+      }
+
+      .hero-description {
+        -webkit-line-clamp: 3;
+        font-size: 13px;
+      }
+
+      .shelf {
+        gap: 8px;
+      }
+
+      .poster-grid {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
+
+        gap: 20px 8px;
+      }
+
+      .poster-title {
+        font-size: 11px;
+      }
+
+      .poster-meta {
+        font-size: 10px;
+      }
+
+      .section-heading h2 {
+        font-size: 17px;
+      }
+
+      .detail-art {
+        height: 240px;
+      }
+
+      .detail-content,
+      .settings-content {
+        padding: 20px;
+      }
+
+      .detail-title {
+        font-size: 28px;
+      }
+
+      .episode-card {
+        grid-template-columns: 90px 1fr;
+      }
+
+      .episode-image {
+        width: 90px;
+      }
+
+      .episode-runtime {
+        display: none;
+      }
+
+      .mobile-navigation {
+        display: flex;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skip-link" href="#main">
+    Skip to content
   </a>
 
-  <nav class="navlinks" id="navlinks">
-    <a href="#home" class="active">Home</a>
-    <a href="#movies">Movies</a>
-    <a href="#series">TV Shows</a>
-    <a href="#trending">Trending</a>
-    <a href="#my-list">My List</a>
-  </nav>
-
-  <div class="navright">
-    <label class="searchbox" id="searchbox">
-      <button class="iconbtn" id="search-toggle" aria-label="Search">
-        <svg viewBox="0 0 24 24">
-          <circle cx="10.8" cy="10.8" r="6.8"></circle>
-          <path d="m16 16 5 5"></path>
-        </svg>
-      </button>
-      <input
-        id="search-input"
-        type="search"
-        placeholder="Titles, people, genres"
-        autocomplete="off"
+  <header class="topbar">
+    <div class="navigation">
+      <button
+        class="brand"
+        data-route="home"
+        type="button"
       >
-    </label>
+        TITAN
+      </button>
 
-    <button class="iconbtn" id="notifications-button" aria-label="Notifications">
-      <svg viewBox="0 0 24 24">
-        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
-        <path d="M10 21h4"></path>
-      </svg>
-    </button>
+      <span class="brand-caption">
+        YOUR NEXT GREAT WATCH
+      </span>
 
-    <button class="avatar" id="profile-button" aria-label="Profile">
-      Profile
-    </button>
+      <nav
+        class="navigation-links"
+        aria-label="Primary navigation"
+      >
+        <button data-route="home">Home</button>
+        <button data-route="movies">Movies</button>
+        <button data-route="series">TV Shows</button>
+        <button data-route="search">Search</button>
+        <button data-route="list">My List</button>
+      </nav>
 
-    <button class="iconbtn mobilemenu" id="mobile-menu" aria-label="Open menu">
-      <svg viewBox="0 0 24 24">
-        <path d="M3 6h18M3 12h18M3 18h18"></path>
-      </svg>
-    </button>
-  </div>
-</header>
-
-
-<!-- ==========================================
-     HERO FEATURE
-========================================== -->
-
-<main id="home">
-
-  <section class="hero" id="hero">
-    <div class="hero-art" id="hero-art"></div>
-
-    <div class="hero-copy">
-      <div class="eyebrow">
-        <span class="eyebrow-mark">T</span>
-        <span>TITAN ORIGINAL EXPERIENCE</span>
-      </div>
-
-      <div class="hero-kicker" id="hero-kicker">
-        FEATURED TITLE
-      </div>
-
-      <h1 id="hero-title">THE LAST KINGDOM</h1>
-
-      <div class="hero-meta" id="hero-meta">
-        <span class="match">98% Match</span>
-        <span id="hero-year">2025</span>
-        <span class="quality">4K</span>
-        <span id="hero-type">Series</span>
-      </div>
-
-      <p class="hero-desc" id="hero-desc">
-        Discover a world of unforgettable stories, powerful characters,
-        and cinematic adventures.
-      </p>
-
-      <div class="hero-actions">
-        <button class="btn btn-primary" id="hero-play">
-          <svg viewBox="0 0 24 24">
-            <path d="M8 4v16l13-8z"></path>
-          </svg>
-          Play
-        </button>
-
-        <button class="btn btn-secondary" id="hero-info">
-          <svg viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="9"></circle>
-            <path d="M12 11v5M12 7h.01"></path>
-          </svg>
-          More Info
-        </button>
-
-        <button class="round-action" id="hero-list" aria-label="Add to My List">
-          +
-        </button>
-      </div>
-    </div>
-
-    <div class="hero-bottom">
-      <div class="hero-dots" id="hero-dots">
-        <button class="hero-dot active" aria-label="Featured title 1"></button>
-        <button class="hero-dot" aria-label="Featured title 2"></button>
-        <button class="hero-dot" aria-label="Featured title 3"></button>
-      </div>
-
-      <div class="maturity">
-        <span class="quality">16+</span>
-        <span>Available in TITAN</span>
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ==========================================
-       CONTENT SHELVES
-  ========================================== -->
-
-  <div class="rows" id="content-rows">
-
-    <section class="shelf" id="trending">
-      <div class="shelf-head">
-        <h2 class="shelf-title">
-          Trending Now
-          <small>Popular this week</small>
-        </h2>
-        <a class="seeall" href="#trending">Explore all</a>
-      </div>
-
-      <div class="rail-wrap">
-        <div class="rail" id="rail-trending"></div>
-      </div>
-    </section>
-
-    <section class="shelf" id="movies">
-      <div class="shelf-head">
-        <h2 class="shelf-title">
-          Movies
-          <small>Stories worth watching</small>
-        </h2>
-        <a class="seeall" href="#movies">Explore all</a>
-      </div>
-
-      <div class="rail-wrap">
-        <div class="rail" id="rail-movies"></div>
-      </div>
-    </section>
-
-    <section class="shelf" id="series">
-      <div class="shelf-head">
-        <h2 class="shelf-title">
-          TV Shows
-          <small>Discover your next series</small>
-        </h2>
-        <a class="seeall" href="#series">Explore all</a>
-      </div>
-
-      <div class="rail-wrap">
-        <div class="rail" id="rail-series"></div>
-      </div>
-    </section>
-
-    <section class="shelf" id="action">
-      <div class="shelf-head">
-        <h2 class="shelf-title">Action & Adventure</h2>
-        <a class="seeall" href="#action">Explore all</a>
-      </div>
-
-      <div class="rail-wrap">
-        <div class="rail" id="rail-action"></div>
-      </div>
-    </section>
-
-    <section class="shelf" id="drama">
-      <div class="shelf-head">
-        <h2 class="shelf-title">Drama & Suspense</h2>
-        <a class="seeall" href="#drama">Explore all</a>
-      </div>
-
-      <div class="rail-wrap">
-        <div class="rail" id="rail-drama"></div>
-      </div>
-    </section>
-
-    <section class="shelf" id="animation">
-      <div class="shelf-head">
-        <h2 class="shelf-title">Anime & Animation</h2>
-        <a class="seeall" href="#animation">Explore all</a>
-      </div>
-
-      <div class="rail-wrap">
-        <div class="rail" id="rail-animation"></div>
-      </div>
-    </section>
-
-    <section class="shelf" id="my-list">
-      <div class="shelf-head">
-        <h2 class="shelf-title">
-          My List
-          <small>Your saved titles</small>
-        </h2>
-      </div>
-
-      <div class="rail-wrap">
-        <div class="rail" id="rail-my-list"></div>
-      </div>
-
-      <p id="empty-list-message" style="
-        display:none;
-        color:#aaa;
-        font-size:14px;
-        padding:8px 2px 20px;
-      ">
-        Your list is empty. Add movies and shows to find them here.
-      </p>
-    </section>
-
-  </div>
-</main>
-
-
-<!-- ==========================================
-     TITLE DETAILS MODAL
-========================================== -->
-
-<div
-  class="modal-backdrop"
-  id="details-modal"
-  aria-hidden="true"
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="details-title"
->
-  <section class="details-panel">
-    <button
-      class="modal-close"
-      data-close-modal
-      aria-label="Close details"
-    >
-      ×
-    </button>
-
-    <div class="details-hero" id="details-hero">
-      <img id="details-backdrop" src="" alt="">
-      <div class="details-gradient"></div>
-
-      <div class="details-hero-content">
-        <span class="details-label">TITAN PRESENTS</span>
-        <h2 id="details-title">Title Name</h2>
-
-        <div class="details-actions">
-          <button class="btn btn-primary" id="details-play">
-            ▶ Play
-          </button>
-
-          <button
-            class="round-action"
-            id="details-list"
-            aria-label="Add to My List"
-          >
-            +
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="details-body">
-      <div class="details-information">
-        <div class="details-meta" id="details-meta"></div>
-        <p id="details-description"></p>
-        <div class="details-extra">
-          <span>Genre:</span>
-          <span id="details-genre"></span>
-        </div>
-      </div>
-
-      <div class="details-cast">
-        <span>Content</span>
-        <p id="details-content-type"></p>
-      </div>
-    </div>
-
-    <div class="series-area" id="series-area" hidden>
-      <div class="series-heading">
-        <div>
-          <span class="section-overline">EPISODE GUIDE</span>
-          <h3>Episodes</h3>
-        </div>
-
-        <label class="season-select-wrap">
-          <span class="visually-hidden">Choose a season</span>
-          <select id="season-select" aria-label="Choose a season"></select>
-        </label>
-      </div>
-
-      <div class="season-tabs" id="season-tabs"></div>
-
-      <div class="episode-list" id="episode-list"></div>
-    </div>
-
-    <div class="details-footer">
-      <span>TITAN</span>
-      <span>Discover more. Watch your way.</span>
-    </div>
-  </section>
-</div>
-
-
-<!-- ==========================================
-     VIDEO PLAYER
-========================================== -->
-
-<div
-  class="player-backdrop"
-  id="player-modal"
-  aria-hidden="true"
-  role="dialog"
-  aria-modal="true"
-  aria-label="Video player"
->
-  <div class="player-window">
-    <div class="player-toolbar">
-      <div>
-        <strong id="player-title">TITAN Player</strong>
-        <p id="player-subtitle">Select a supported video source</p>
-      </div>
-
-      <button class="modal-close" id="player-close" aria-label="Close player">
-        ×
+      <button
+        id="openSettings"
+        class="button button-small"
+      >
+        Connect / Settings
       </button>
     </div>
+  </header>
 
-    <video
-      id="video-player"
-      controls
-      playsinline
-      preload="metadata"
-      poster=""
-    ></video>
+  <main id="main" tabindex="-1"></main>
 
-    <div class="player-message" id="player-message">
-      Add a valid video URL to enable playback.
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">TITAN</div>
+
+      <p>Your next great watch starts here.</p>
+
+      <div class="footer-actions">
+        <button
+          id="exportList"
+          class="button button-small"
+        >
+          Export My List
+        </button>
+
+        <button
+          id="clearProgress"
+          class="button button-small"
+        >
+          Clear progress
+        </button>
+
+        <button
+          id="disconnect"
+          class="button button-small"
+        >
+          Disconnect TMDB
+        </button>
+      </div>
+
+      <p class="muted">
+        This product uses the TMDB API but is not
+        endorsed or certified by TMDB.
+        Metadata and images:
+        <a
+          href="https://www.themoviedb.org/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          The Movie Database
+        </a>.
+      </p>
+
+      <p class="muted">
+        Playback is provided by an external service.
+        Use only content you are authorized to access.
+        Availability and subtitle tracks are not guaranteed.
+      </p>
     </div>
-  </div>
-</div>
-
-
-<!-- ==========================================
-     SEARCH RESULTS
-========================================== -->
-
-<section class="search-page" id="search-page" hidden>
-  <div class="search-page-head">
-    <div>
-      <span class="section-overline">DISCOVER TITAN</span>
-      <h2>Search Results</h2>
-      <p id="search-summary">Explore movies and TV shows.</p>
-    </div>
-
-    <button class="btn btn-secondary" id="search-back">
-      Back to Home
-    </button>
-  </div>
-
-  <div class="search-grid" id="search-grid"></div>
-
-  <div class="search-empty" id="search-empty" hidden>
-    <h3>No titles found</h3>
-    <p>Try a different title, genre, or search term.</p>
-  </div>
-</section>
-
-
-<!-- ==========================================
-     NOTIFICATION TOAST
-========================================== -->
-
-<div
-  class="toast"
-  id="toast"
-  role="status"
-  aria-live="polite"
-></div>
-
-
-<!-- ==========================================
-     FOOTER
-========================================== -->
-
-<footer class="site-footer">
-  <div class="footer-brand">TITAN</div>
-
-  <p>
-    Your next great watch starts here.
-  </p>
-
-  <div class="footer-links">
-    <a href="#home">Home</a>
-    <a href="#movies">Movies</a>
-    <a href="#series">TV Shows</a>
-    <a href="#my-list">My List</a>
-  </div>
-
-  <div class="footer-bottom">
-    <span>© <span id="footer-year"></span> TITAN</span>
-    <span>A cinematic discovery experience.</span>
-  </div>
-</footer>
-
-
-<!-- ==========================================
-     APP STYLES — MODALS & EPISODES
-========================================== -->
-
-<style>
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0,0,0,0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.modal-backdrop,
-.player-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: #000d;
-  backdrop-filter: blur(8px);
-  overflow-y: auto;
-  display: none;
-  padding: 35px 16px;
-}
-
-.modal-backdrop.open,
-.player-backdrop.open {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  animation: fadeIn .2s ease;
-}
-
-.details-panel {
-  position: relative;
-  width: min(900px,100%);
-  background: #141414;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 25px 100px #000b;
-  animation: modalRise .35s var(--ease);
-}
-
-.modal-close {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  position: absolute;
-  z-index: 5;
-  top: 13px;
-  right: 13px;
-  border: 0;
-  border-radius: 50%;
-  background: #111d;
-  color: #fff;
-  font-size: 30px;
-  line-height: 1;
-  transition: background .2s,transform .2s;
-}
-
-.modal-close:hover {
-  background: #333;
-  transform: rotate(90deg);
-}
-
-.details-hero {
-  height: clamp(280px,48vw,490px);
-  position: relative;
-  overflow: hidden;
-  background: #202020;
-}
-
-.details-hero > img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  object-position: center 30%;
-}
-
-.details-gradient {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(0deg,#141414 0%,#14141408 75%),
-    linear-gradient(90deg,#141414aa,transparent 85%);
-}
-
-.details-hero-content {
-  position: absolute;
-  bottom: 32px;
-  left: 5%;
-  right: 5%;
-  max-width: 660px;
-}
-
-.details-label,
-.section-overline {
-  color: #c8c8c8;
-  font-size: 10px;
-  letter-spacing: 3px;
-  font-weight: 800;
-}
-
-.details-hero-content h2 {
-  font-size: clamp(30px,5vw,57px);
-  line-height: 1;
-  letter-spacing: -2px;
-  margin: 12px 0 20px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.details-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.details-body {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 30px;
-  padding: 12px 5% 28px;
-}
-
-.details-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  color: #d1d1d1;
-  font-size: 12px;
-  margin-bottom: 13px;
-}
-
-.details-meta .match {
-  color: #46d483;
-}
-
-.details-information > p {
-  font-size: 14px;
-  line-height: 1.8;
-  color: #e3e3e3;
-  margin: 0 0 18px;
-}
-
-.details-extra {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 12px;
-  line-height: 1.7;
-}
-
-.details-extra span:first-child,
-.details-cast > span {
-  color: #777;
-}
-
-.details-extra span:last-child {
-  color: #eee;
-}
-
-.details-cast {
-  font-size: 12px;
-  line-height: 1.8;
-}
-
-.details-cast p {
-  color: #eee;
-  margin-top: 7px;
-}
-
-.series-area {
-  padding: 12px 5% 30px;
-}
-
-.series-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.series-heading h3 {
-  font-size: 25px;
-  letter-spacing: -.5px;
-  margin: 7px 0 0;
-}
-
-.season-select-wrap select {
-  max-width: 190px;
-  background: #252525;
-  color: #fff;
-  border: 1px solid #555;
-  border-radius: 4px;
-  padding: 10px 35px 10px 12px;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.season-tabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 3px 0 14px;
-  border-bottom: 1px solid #ffffff19;
-}
-
-.season-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.season-tab {
-  flex: 0 0 auto;
-  min-width: 92px;
-  background: #202020;
-  border: 1px solid #ffffff16;
-  border-radius: 4px;
-  color: #bbb;
-  padding: 11px 15px;
-  font-size: 12px;
-  font-weight: 800;
-  transition: background .25s,color .25s,border-color .25s;
-}
-
-.season-tab:hover {
-  background: #303030;
-  color: #fff;
-}
-
-.season-tab.active {
-  background: #fff;
-  color: #111;
-  border-color: #fff;
-}
-
-.episode-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.episode-card {
-  display: grid;
-  grid-template-columns: 32px minmax(120px,190px) minmax(0,1fr) 25px;
-  align-items: center;
-  gap: 15px;
-  padding: 16px 10px;
-  border-bottom: 1px solid #ffffff17;
-  border-radius: 5px;
-  transition: background .2s;
-  cursor: pointer;
-}
-
-.episode-card:hover,
-.episode-card:focus-visible {
-  background: #ffffff0b;
-}
-
-.episode-number {
-  text-align: center;
-  color: #999;
-  font-size: 19px;
-  font-weight: 600;
-}
-
-.episode-thumbnail {
-  aspect-ratio: 16/9;
-  position: relative;
-  overflow: hidden;
-  border-radius: 4px;
-  background: #252525;
-}
-
-.episode-thumbnail img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform .3s;
-}
-
-.episode-card:hover .episode-thumbnail img {
-  transform: scale(1.06);
-}
-
-.episode-play {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: white;
-  background: #0004;
-  opacity: 0;
-  transition: opacity .2s;
-  font-size: 28px;
-}
-
-.episode-card:hover .episode-play {
-  opacity: 1;
-}
-
-.episode-content {
-  min-width: 0;
-}
-
-.episode-title-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: baseline;
-  margin-bottom: 7px;
-}
-
-.episode-title {
-  font-size: 14px;
-  font-weight: 800;
-  color: #f5f5f5;
-  margin: 0;
-}
-
-.episode-duration {
-  font-size: 11px;
-  color: #bbb;
-  white-space: nowrap;
-}
-
-.episode-description {
-  color: #aaa;
-  font-size: 12px;
-  line-height: 1.65;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.episode-more {
-  color: #bbb;
-  font-size: 20px;
-  text-align: center;
-}
-
-.details-footer {
-  padding: 18px 5%;
-  border-top: 1px solid #ffffff12;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  color: #777;
-  font-size: 11px;
-}
-
-.details-footer span:first-child {
-  color: #e50914;
-  font-size: 17px;
-  font-weight: 900;
-  letter-spacing: 2px;
-}
-
-.player-backdrop {
-  z-index: 120;
-  align-items: center;
-}
-
-.player-window {
-  width: min(1100px,100%);
-  margin: auto;
-  position: relative;
-  background: #101010;
-  border: 1px solid #ffffff16;
-  border-radius: 7px;
-  overflow: hidden;
-}
-
-.player-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  padding: 15px 20px;
-}
-
-.player-toolbar strong {
-  font-size: 15px;
-}
-
-.player-toolbar p {
-  font-size: 11px;
-  color: #aaa;
-  margin: 5px 0 0;
-}
-
-.player-toolbar .modal-close {
-  position: static;
-  flex: 0 0 auto;
-}
-
-#video-player {
-  width: 100%;
-  max-height: 72vh;
-  display: block;
-  background: #000;
-}
-
-.player-message {
-  color: #aaa;
-  font-size: 12px;
-  line-height: 1.6;
-  padding: 12px 20px 18px;
-}
-
-.toast {
-  position: fixed;
-  bottom: 25px;
-  left: 50%;
-  z-index: 200;
-  transform: translate(-50%,20px);
-  background: #f5f5f5;
-  color: #111;
-  padding: 13px 20px;
-  border-radius: 5px;
-  box-shadow: 0 12px 40px #0008;
-  font-size: 13px;
-  font-weight: 700;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity .25s,transform .25s,visibility .25s;
-  max-width: calc(100% - 30px);
-  text-align: center;
-}
-
-.toast.show {
-  opacity: 1;
-  visibility: visible;
-  transform: translate(-50%,0);
-}
-
-.site-footer {
-  padding: 45px 5% 25px;
-  border-top: 1px solid #ffffff14;
-  color: #777;
-  font-size: 12px;
-}
-
-.footer-brand {
-  color: #e50914;
-  font-size: 24px;
-  font-weight: 900;
-  letter-spacing: 3px;
-}
-
-.site-footer > p {
-  margin: 10px 0 22px;
-}
-
-.footer-links {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-bottom: 28px;
-}
-
-.footer-links a:hover {
-  color: #fff;
-}
-
-.footer-bottom {
-  border-top: 1px solid #ffffff15;
-  padding-top: 20px;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.search-page {
-  min-height: 100vh;
-  padding: calc(var(--nav) + 45px) 5% 60px;
-}
-
-.search-page-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 28px;
-}
-
-.search-page-head h2 {
-  font-size: clamp(28px,4vw,42px);
-  margin: 8px 0;
-}
-
-.search-page-head p {
-  color: #aaa;
-  font-size: 13px;
-}
-
-.search-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill,minmax(150px,1fr));
-  gap: 25px 14px;
-}
-
-.search-grid .poster {
-  width: 100%;
-  min-width: 0;
-  flex: initial;
-}
-
-.search-grid .poster-title-below {
-  color: white;
-  font-size: 16px;
-  line-height: 1.45;
-  font-weight: 700;
-  margin-top: 9px;
-  min-height: 42px;
-}
-
-.search-empty {
-  text-align: center;
-  padding: 70px 20px;
-  color: #aaa;
-}
-
-.search-empty h3 {
-  color: #fff;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes modalRise {
-  from { opacity: 0; transform: translateY(18px) scale(.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes rise {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes heroDrift {
-  from { transform: scale(1.02); }
-  to { transform: scale(1.07); }
-}
-
-@media (min-width: 1200px) {
-  .hero {
-    height: 800px;
-  }
-
-  .shelf {
-    margin-bottom: 43px;
-  }
-
-  .rail {
-    gap: 12px;
-  }
-}
-
-@media (max-width: 900px) {
-  .topbar {
-    gap: 18px;
-    padding: 0 
+  </footer>
+
+  <nav
+    class="mobile-navigation"
+    aria-label="Mobile navigation"
+  >
+    <button data-route="home">Home</button>
+    <button data-route="movies">Movies</button>
+    <button data-route="se
