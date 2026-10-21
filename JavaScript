@@ -293,3 +293,247 @@ const TITANMovieModal = (() => {
 document.addEventListener("DOMContentLoaded", () => {
   TITANMovieModal.init();
 });
+"use strict";
+
+const TITANSearch = (() => {
+  const API_BASE = "https://api.themoviedb.org/3";
+  const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
+
+  const state = {
+    query: "",
+    type: "multi",
+    timer: null,
+    controller: null,
+    requestId: 0
+  };
+
+  function getToken() {
+    return window.TITAN_TMDB?.accessToken || "";
+  }
+
+  function getLanguage() {
+    return window.TITAN_TMDB?.language || "en-US";
+  }
+
+  async function request(endpoint, params = {}) {
+    const token = getToken();
+
+    if (!token || token === "YOUR_TMDB_READ_ACCESS_TOKEN") {
+      throw new Error("TMDB API token is missing.");
+    }
+
+    const url = new URL(`${API_BASE}${endpoint}`);
+
+    Object.entries({
+      language: getLanguage(),
+      ...params
+    }).forEach(([key, value]) => {
+      url.searchParams.set(key, value);
+    });
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      signal: state.controller?.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`Search failed: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  function getTitle(item) {
+    return item.title || item.name || "Untitled";
+  }
+
+  function getYear(item) {
+    const date = item.release_date || item.first_air_date || "";
+    return date ? date.slice(0, 4) : "";
+  }
+
+  function createCard(item) {
+    const type = item.media_type;
+
+    if (!["movie", "tv"].includes(type)) {
+      return null;
+    }
+
+    const card = document.createElement("article");
+    card.className = "poster-card";
+    card.dataset.tmdbId = String(item.id);
+    card.dataset.tmdbType = type;
+
+    const image = document.createElement("img");
+    image.loading = "lazy";
+    image.alt = getTitle(item);
+    image.className = "poster-card__image";
+
+    if (item.poster_path) {
+      image.src = `${IMAGE_BASE}${item.poster_path}`;
+    }
+
+    const details = document.createElement("div");
+    details.className = "poster-card__details";
+
+    const title = document.createElement("h3");
+    title.dataset.tmdbTitle = "";
+    title.textContent = getTitle(item);
+
+    const rating = document.createElement("span");
+    rating.dataset.tmdbRating = "";
+    rating.textContent = Number(item.vote_average || 0).toFixed(1);
+
+    const year = document.createElement("span");
+    year.dataset.tmdbDate = "";
+    year.textContent = getYear(item);
+
+    const overview = document.createElement("p");
+    overview.dataset.tmdbOverview = "";
+    overview.hidden = true;
+    overview.textContent = item.overview || "";
+
+    details.append(title, rating, year, overview);
+    card.append(image, details);
+
+    return card;
+  }
+
+  function showMessage(container, message) {
+    container.replaceChildren();
+
+    const text = document.createElement("p");
+    text.className = "titan-search__message";
+    text.textContent = message;
+
+    container.appendChild(text);
+  }
+
+  async function search(query, type, results, status) {
+    const cleanQuery = query.trim();
+    state.query = cleanQuery;
+    state.type = type;
+
+    if (!cleanQuery) {
+      showMessage(results, "Search for a movie or TV series.");
+      status.textContent = "";
+      return;
+    }
+
+    if (state.controller) {
+      state.controller.abort();
+    }
+
+    state.controller = new AbortController();
+    const controller = state.controller;
+    const requestId = ++state.requestId;
+
+    status.textContent = "Searching...";
+    results.setAttribute("aria-busy", "true");
+
+    try {
+      const endpoint =
+        type === "multi"
+          ? "/search/multi"
+          : `/search/${type}`;
+
+      const data = await request(endpoint, {
+        query: cleanQuery,
+        include_adult: "false",
+        page: "1"
+      });
+
+      if (
+        requestId !== state.requestId ||
+        controller.signal.aborted
+      ) {
+        return;
+      }
+
+      const items = (data.results || []).filter(item => {
+        return (
+          item.poster_path &&
+          (type === "multi"
+            ? ["movie", "tv"].includes(item.media_type)
+            : true)
+        );
+      });
+
+      results.replaceChildren();
+
+      if (!items.length) {
+        showMessage(results, "No matching titles found.");
+        status.textContent = "No results.";
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+
+      items.forEach(item => {
+        const card = createCard(item);
+        if (card) fragment.appendChild(card);
+      });
+
+      results.appendChild(fragment);
+      status.textContent = `${items.length} results found.`;
+    } catch (error) {
+      if (error.name === "AbortError") return;
+
+      console.error("TITAN search error:", error);
+      showMessage(results, "Search failed. Please try again.");
+      status.textContent = "Unable to complete search.";
+    } finally {
+      if (requestId === state.requestId) {
+        results.setAttribute("aria-busy", "false");
+      }
+    }
+  }
+
+  function init() {
+    const input = document.querySelector("#titan-search-input");
+    const selector = document.querySelector("#titan-search-type");
+    const results = document.querySelector("#titan-search-results");
+    const status = document.querySelector("#titan-search-status");
+
+    if (!input || !selector || !results || !status) {
+      console.warn("TITAN search elements are missing from HTML.");
+      return;
+    }
+
+    input.addEventListener("input", () => {
+      clearTimeout(state.timer);
+
+      const query = input.value;
+
+      state.timer = setTimeout(() => {
+        search(query, selector.value, results, status);
+      }, 350);
+    });
+
+    selector.addEventListener("change", () => {
+      clearTimeout(state.timer);
+      search(input.value, selector.value, results, status);
+    });
+
+    const form = input.closest("form");
+
+    if (form) {
+      form.addEventListener("submit", event => {
+        event.preventDefault();
+        clearTimeout(state.timer);
+        search(input.value, selector.value, results, status);
+      });
+    }
+
+    showMessage(results, "Search for your next great watch.");
+  }
+
+  return { init, search };
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+  TITANSearch.init();
+});
