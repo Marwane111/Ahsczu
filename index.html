@@ -1285,3 +1285,34 @@ const TITAN_APP = (() => {
 <p data-tmdb-overview></p>
 <span data-tmdb-date></span>
 <script src="movie-modal.js" defer></script>
+<section class="titan-search" aria-label="Search movies and TV shows">
+  <form class="titan-search__form">
+    <input
+      id="titan-search-input"
+      type="search"
+      placeholder="Search movies and series..."
+      autocomplete="off"
+      aria-label="Search titles"
+    >
+
+    <select id="titan-search-type" aria-label="Content type">
+      <option value="multi">All titles</option>
+      <option value="movie">Movies</option>
+      <option value="tv">TV series</option>
+    </select>
+
+    <button type="submit">Search</button>
+  </form>
+
+  <p
+    id="titan-search-status"
+    class="titan-search__status"
+    aria-live="polite"
+  ></p>
+
+  <div
+    id="titan-search-results"
+    class="titan-search__results"
+    aria-busy="false"
+  ></div>
+</section>
