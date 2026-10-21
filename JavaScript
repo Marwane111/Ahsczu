@@ -118,3 +118,178 @@ async function loadTitanPosters() {
 }
 
 document.addEventListener("DOMContentLoaded", loadTitanPosters);
+"use strict";
+
+const TITANMovieModal = (() => {
+  let modal;
+  let currentCard = null;
+
+  function createModal() {
+    if (modal) return modal;
+
+    modal = document.createElement("div");
+    modal.className = "movie-modal";
+    modal.id = "titan-movie-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-labelledby", "titan-modal-title");
+    modal.hidden = true;
+
+    modal.innerHTML = `
+      <div class="movie-modal__backdrop" data-close-modal></div>
+
+      <section class="movie-modal__panel">
+        <button
+          class="movie-modal__close"
+          type="button"
+          aria-label="Close movie details"
+          data-close-modal
+        >&#215;</button>
+
+        <div class="movie-modal__content">
+          <img
+            class="movie-modal__poster"
+            id="titan-modal-poster"
+            alt=""
+          >
+
+          <div class="movie-modal__details">
+            <p class="movie-modal__eyebrow">TITAN ORIGINAL DISCOVERY</p>
+
+            <h2 id="titan-modal-title">Movie details</h2>
+
+            <div class="movie-modal__meta">
+              <span id="titan-modal-rating"></span>
+              <span id="titan-modal-date"></span>
+            </div>
+
+            <p
+              class="movie-modal__overview"
+              id="titan-modal-overview"
+            ></p>
+
+            <p
+              class="movie-modal__status"
+              id="titan-modal-status"
+              aria-live="polite"
+            ></p>
+          </div>
+        </div>
+      </section>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener("click", (event) => {
+      if (event.target.closest("[data-close-modal]")) {
+        close();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !modal.hidden) {
+        close();
+      }
+    });
+
+    return modal;
+  }
+
+  function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value || "";
+  }
+
+  function open(card) {
+    if (!card) return;
+
+    createModal();
+    currentCard = card;
+
+    const image = card.querySelector("img");
+    const title =
+      card.dataset.tmdbTitle ||
+      card.querySelector("[data-tmdb-title]")?.textContent ||
+      "Movie details";
+
+    const rating =
+      card.dataset.tmdbRating ||
+      card.querySelector("[data-tmdb-rating]")?.textContent;
+
+    const overview =
+      card.querySelector("[data-tmdb-overview]")?.textContent;
+
+    const date =
+      card.querySelector("[data-tmdb-date]")?.textContent;
+
+    const poster = document.getElementById("titan-modal-poster");
+
+    poster.src = image?.currentSrc || image?.src || "";
+    poster.alt = title;
+
+    setText("titan-modal-title", title);
+    setText("titan-modal-rating", rating ? `★ ${rating}/10` : "");
+    setText("titan-modal-date", date || "");
+    setText(
+      "titan-modal-overview",
+      overview || "Movie information is not available yet."
+    );
+    setText("titan-modal-status", "");
+
+    modal.hidden = false;
+    document.body.classList.add("titan-modal-open");
+
+    modal.querySelector(".movie-modal__close")?.focus();
+  }
+
+  function close() {
+    if (!modal || modal.hidden) return;
+
+    modal.hidden = true;
+    document.body.classList.remove("titan-modal-open");
+
+    if (currentCard) {
+      currentCard.focus?.();
+    }
+
+    currentCard = null;
+  }
+
+  function init() {
+    createModal();
+
+    document.addEventListener("click", (event) => {
+      const card = event.target.closest(
+        ".poster-card[data-tmdb-id][data-tmdb-type]"
+      );
+
+      if (!card) return;
+
+      if (event.target.closest("a, button")) return;
+
+      open(card);
+    });
+
+    document.querySelectorAll(".poster-card").forEach((card) => {
+      if (!card.hasAttribute("tabindex")) {
+        card.setAttribute("tabindex", "0");
+      }
+
+      card.addEventListener("keydown", (event) => {
+        if (
+          (event.key === "Enter" || event.key === " ") &&
+          event.target === card
+        ) {
+          event.preventDefault();
+          open(card);
+        }
+      });
+    });
+  }
+
+  return { init, open, close };
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+  TITANMovieModal.init();
+});
