@@ -1,610 +1,1281 @@
-<!DOCTYPE1 html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MERLMovie</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Thème principal : Noir et Rouge Netflix */
-        :root {
-            --bg-main: #0e0e0e;
-            --bg-card: #181818;
-            --primary-red: #E50914;
-            --text-white: #ffffff;
-            --text-gray: #aaaaaa;
-            --border-color: #2b2b2b;
-        }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+<script>
+/* =========================================================
+   TITAN — PART 4 OF 14
+   Interactive interface, title details, seasons and player
+   Requires the existing TITAN_API integration.
+   ========================================================= */
 
-        body {
-            background-color: var(--bg-main);
-            color: var(--text-white);
-            padding-bottom: 70px;
-            overflow-x: hidden;
-        }
+const TITAN_APP = (() => {
+  "use strict";
 
-        /* Top Bar & Header */
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background-color: rgba(14, 14, 14, 0.95);
-            backdrop-filter: blur(8px);
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-        }
+  const state = {
+    currentTitle: null,
+    currentDetails: null,
+    currentSeason: 1,
+    currentPage: "home",
+    searchTimer: null,
+    list: readStorage("titan-my-list", []),
+    history: readStorage("titan-history", []),
+    seasonCache: new Map()
+  };
 
-        .logo {
-            color: var(--primary-red);
-            font-size: 1.5rem;
-            font-weight: 900;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
+  const $ = (selector, root = document) =>
+    root.querySelector(selector);
 
-        .search-box {
-            position: relative;
-            flex-grow: 1;
-            max-width: 300px;
-            margin-left: 15px;
-        }
+  const $$ = (selector, root = document) =>
+    [...root.querySelectorAll(selector)];
 
-        .search-box input {
-            width: 100%;
-            padding: 8px 35px 8px 12px;
-            background-color: #222;
-            border: 1px solid #333;
-            border-radius: 20px;
-            color: var(--text-white);
-            font-size: 0.9rem;
-            outline: none;
-        }
+  function readStorage(key, fallback) {
+    try {
+      const value = JSON.parse(localStorage.getItem(key));
+      return value ?? fallback;
+    } catch {
+      return fallback;
+    }
+  }
 
-        .search-box input:focus {
-            border-color: var(--primary-red);
-        }
+  function saveStorage(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.warn("Local storage is unavailable.", error);
+    }
+  }
 
-        .search-box i {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-gray);
-        }
+  function escapeHTML(value = "") {
+    return String(value).replace(/[&<>"']/g, character => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[character]);
+  }
 
-        /* Container Principal */
-        .container {
-            padding: 16px;
-        }
+  function imageURL(path, size = "w500") {
+    if (!path) return "";
+    if (/^https?:\/\//i.test(path)) return path;
 
-        .section-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-            margin: 18px 0 10px 0;
-            color: var(--text-white);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+    return `https://image.tmdb.org/t/p/${size}${path}`;
+  }
 
-        .section-title span {
-            border-right: 3px solid var(--primary-red);
-            padding-right: 8px;
-        }
+  function getTitle(item) {
+    return item?.title || item?.name || "Untitled";
+  }
 
-        /* Grid Movies & Series */
-        .media-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-            gap: 12px;
-        }
+  function getType(item) {
+    return item?.type ||
+      item?.media_type ||
+      (item?.first_air_date || item?.name ? "tv" : "movie");
+  }
 
-        .card {
-            background-color: var(--bg-card);
-            border-radius: 8px;
-            overflow: hidden;
-            position: relative;
-            transition: transform 0.2s;
-        }
+  function getID(item) {
+    return item?.tmdbId || item?.id;
+  }
 
-        .card:active {
-            transform: scale(0.96);
-        }
+  function formatRating(value) {
+    const rating = Number(value || 0);
+    return rating > 0 ? rating.toFixed(1) : "N/A";
+  }
 
-        .card img {
-            width: 100%;
-            height: 160px;
-            object-fit: cover;
-            display: block;
-        }
+  function notify(message) {
+    let toast = $("#titan-toast");
 
-        .rating-badge {
-            position: absolute;
-            top: 6px;
-            right: 6px;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: #ffd700;
-            font-size: 0.75rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "titan-toast";
+      toast.setAttribute("role", "status");
 
-        .card-title {
-            padding: 8px;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-align: center;
-        }
+      Object.assign(toast.style, {
+        position: "fixed",
+        left: "50%",
+        bottom: "28px",
+        transform: "translate(-50%, 20px)",
+        background: "#fff",
+        color: "#111",
+        padding: "12px 18px",
+        borderRadius: "8px",
+        zIndex: "10000",
+        opacity: "0",
+        pointerEvents: "none",
+        transition: "opacity .2s, transform .2s",
+        boxShadow: "0 12px 40px #0008",
+        fontSize: "13px",
+        maxWidth: "calc(100% - 32px)"
+      });
 
-        /* Navigation inférieure (Mobile) */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background-color: #121212;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            border-top: 1px solid var(--border-color);
-            z-index: 1000;
-        }
+      document.body.appendChild(toast);
+    }
 
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: var(--text-gray);
-            font-size: 0.75rem;
-            text-decoration: none;
-        }
+    toast.textContent = message;
+    toast.style.opacity = "1";
+    toast.style.transform = "translate(-50%, 0)";
 
-        .nav-item.active {
-            color: var(--primary-red);
-        }
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translate(-50%, 20px)";
+    }, 2400);
+  }
 
-        .nav-item i {
-            font-size: 1.2rem;
-            margin-bottom: 3px;
-        }
-    </style>
-</head>
-<body>
+  function ensureDetailsView() {
+    let view = $("#titan-details-view");
 
-    <header>
-        <div class="logo">MERLMOVIE</div>
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="بحث عن فيلم أو مسلسل..." onkeyup="handleSearch()">
-        </div>
-    </header>
+    if (view) return view;
 
-    <div class="container" id="appContent">
-        <div class="section-title">
-            <span>الأكثر مشاهدة اليوم</span>
-        </div>
-        <div class="media-grid" id="trendingGrid">
-            <!-- Dynamic Content -->
-        </div>
-    </div>
+    view = document.createElement("section");
+    view.id = "titan-details-view";
+    view.className = "titan-details-view";
+    view.hidden = true;
 
-    <nav class="bottom-nav">
-        <a href="#" class="nav-item active"><i class="fas fa-home"></i><span>الرئيسية</span></a>
-        <a href="#" class="nav-item"><i class="fas fa-compass"></i><span>اكتشف</span></a>
-        <a href="#" class="nav-item"><i class="fas fa-bookmark"></i><span>المكتبة</span></a>
-        <a href="#" class="nav-item"><i class="fas fa-bars"></i><span>المزيد</span></a>
-    </nav>
-    <!-- Contenu additionnel et Modal de détails -->
-    <div id="movieModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; overflow-y:auto; padding:20px;">
-        <div style="max-width:600px; margin:auto; background:#181818; border-radius:12px; overflow:hidden; position:relative;">
-            <button onclick="closeModal()" style="position:absolute; top:15px; right:15px; background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer;"><i class="fas fa-times"></i></button>
-            <div id="modalBody">
-                <!-- Remplir dynamiquement via JS -->
+    view.innerHTML = `
+      <div class="td-backdrop" id="td-backdrop"></div>
+      <div class="td-topbar">
+        <button class="td-back-button" id="td-back" type="button">
+          &#8592; Back
+        </button>
+        <span class="td-brand">TITAN<span>.</span></span>
+      </div>
+      <div class="td-content">
+        <div class="td-overview">
+          <div class="td-poster-wrap">
+            <img id="td-poster" alt="" class="td-poster">
+          </div>
+          <div class="td-information">
+            <p class="td-eyebrow" id="td-eyebrow">TITAN ORIGINAL DISCOVERY</p>
+            <h1 id="td-title">Loading title...</h1>
+            <div class="td-meta" id="td-meta"></div>
+            <p class="td-description" id="td-description"></p>
+            <div class="td-actions">
+              <button class="td-primary" id="td-play" type="button">
+                Play Now
+              </button>
+              <button class="td-secondary" id="td-list" type="button">
+                + My List
+              </button>
+              <button class="td-secondary" id="td-trailer" type="button">
+                Watch Trailer
+              </button>
             </div>
+            <div class="td-facts" id="td-facts"></div>
+          </div>
         </div>
-    </div>
 
-    <script>
-        const TMDB_API_KEY = "YOUR_API_KEY"; // Remplacez par votre clé API TMDB si nécessaire ou utilisez le flux par défaut
-        const IMG_BASE_URL = "https://image.tmdb.org/t/p/w500";
+        <section class="td-section" id="td-seasons-section" hidden>
+          <div class="td-section-heading">
+            <div>
+              <h2>Seasons and Episodes</h2>
+              <p>Select a season to explore its episodes.</p>
+            </div>
+            <select id="td-season-select" aria-label="Select season"></select>
+          </div>
+          <div id="td-season-tabs" class="td-season-tabs"></div>
+          <div id="td-season-status" class="td-status"></div>
+          <div id="td-episodes" class="td-episodes"></div>
+        </section>
 
-        // Exemple de données pour alimenter l'interface de manière fluide et professionnelle
-        const sampleMovies = [
-            { id: 1, title: "Spider-Man: Brand New Day", rating: "8.5", year: "2026", poster: "https://image.tmdb.org/t/p/w500/qNBAXBIQlnOtrVvAWMHtDC3g3RC.jpg", overview: "Fighting crime full-time as Spider-Man in a world that doesn't remember him..." },
-            { id: 2, title: "The Hating Game", rating: "7.8", year: "2026", poster: "https://image.tmdb.org/t/p/w500/2vFuG6bWGyQUzYS9d69E5l85nIz.jpg", overview: "An office romance full of tension and competitive spirit." },
-            { id: 3, title: "Clayface", rating: "7.3", year: "2026", poster: "https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg", overview: "A dark thriller following the transformation of a tragic character." },
-            { id: 4, title: "By Any Means", rating: "6.6", year: "2026", poster: "https://image.tmdb.org/t/p/w500/5vHssUeXnCSbTFMc4ah37qUPL5v.jpg", overview: "Action-packed feature film highlighting high-stakes negotiations." }
-        ];
+        <section class="td-section">
+          <h2>Cast</h2>
+          <div id="td-cast" class="td-cast"></div>
+        </section>
 
-        function renderGrid() {
-            const grid = document.getElementById('trendingGrid');
-            grid.innerHTML = sampleMovies.map(movie => `
-                <div class="card" onclick="openModal('${movie.title}', '${movie.rating}', '${movie.year}', '${movie.poster}', '${movie.overview}')">
-                    <span class="rating-badge"><i class="fas fa-star" style="color:#ffd700; margin-left:3px;"></i>${movie.rating}</span>
-                    <img src="${movie.poster}" alt="${movie.title}">
-                    <div class="card-title">${movie.title}</div>
-                </div>
-            `).join('');
+        <section class="td-section">
+          <h2>More Like This</h2>
+          <div id="td-similar" class="td-similar"></div>
+        </section>
+      </div>
+    `;
+
+    const style = document.createElement("style");
+    style.id = "titan-details-styles";
+    style.textContent = `
+      #titan-details-view {
+        --td-accent: #e32636;
+        position: fixed;
+        inset: 0;
+        z-index: 500;
+        overflow-y: auto;
+        background: #08090c;
+        color: #f8f8fa;
+        font-family: "DM Sans", Arial, sans-serif;
+      }
+
+      #titan-details-view[hidden] { display: none; }
+
+      .td-backdrop {
+        position: absolute;
+        inset: 0 0 auto;
+        height: 650px;
+        background-position: center 20%;
+        background-size: cover;
+        opacity: .42;
+        pointer-events: none;
+      }
+
+      .td-backdrop::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(90deg, #08090c 0%, #08090cbb 48%, #08090c55),
+          linear-gradient(0deg, #08090c 5%, transparent 100%);
+      }
+
+      .td-topbar {
+        height: 68px;
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 5%;
+        background: #08090cce;
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid #ffffff12;
+      }
+
+      .td-back-button, .td-secondary {
+        color: #fff;
+        background: #ffffff0b;
+        border: 1px solid #ffffff25;
+        border-radius: 7px;
+        padding: 11px 15px;
+        cursor: pointer;
+      }
+
+      .td-brand {
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 3px;
+      }
+
+      .td-brand span { color: var(--td-accent); }
+
+      .td-content {
+        position: relative;
+        z-index: 1;
+        width: min(1400px, 90%);
+        margin: 0 auto;
+        padding-bottom: 70px;
+      }
+
+      .td-overview {
+        min-height: 480px;
+        display: grid;
+        grid-template-columns: minmax(190px, 290px) minmax(0, 1fr);
+        align-items: center;
+        gap: clamp(24px, 5vw, 65px);
+        padding: 58px 0 50px;
+      }
+
+      .td-poster-wrap {
+        border-radius: 13px;
+        overflow: hidden;
+        background: #17191f;
+        box-shadow: 0 24px 75px #0009;
+      }
+
+      .td-poster {
+        display: block;
+        width: 100%;
+        aspect-ratio: 2 / 3;
+        object-fit: cover;
+      }
+
+      .td-eyebrow {
+        color: var(--td-accent);
+        font-size: 10px;
+        letter-spacing: 3px;
+        font-weight: 800;
+      }
+
+      #td-title {
+        font-size: clamp(34px, 5vw, 72px);
+        line-height: 1.04;
+        letter-spacing: -2px;
+        margin: 14px 0 18px;
+        overflow-wrap: anywhere;
+      }
+
+      .td-meta, .td-actions, .td-facts {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px 17px;
+      }
+
+      .td-meta {
+        color: #d2d3d8;
+        font-size: 13px;
+      }
+
+      .td-rating {
+        color: #fff;
+        font-weight: 800;
+      }
+
+      .td-description {
+        color: #c5c6cc;
+        line-height: 1.9;
+        font-size: 14px;
+        max-width: 720px;
+        margin: 24px 0;
+      }
+
+      .td-actions { margin-bottom: 25px; }
+
+      .td-actions button {
+        min-height: 43px;
+        padding: 0 17px;
+        font-weight: 700;
+        border-radius: 7px;
+        cursor: pointer;
+      }
+
+      .td-primary {
+        background: var(--td-accent);
+        color: white;
+        border: 1px solid var(--td-accent);
+      }
+
+      .td-secondary { background: #ffffff0b; }
+
+      .td-facts {
+        font-size: 12px;
+        color: #b3b5bf;
+      }
+
+      .td-section { padding: 26px 0 20px; }
+
+      .td-section h2 {
+        font-size: 22px;
+        margin: 0 0 8px;
+      }
+
+      .td-section-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+
+      .td-section-heading p {
+        color: #999ca8;
+        font-size: 12px;
+      }
+
+      #td-season-select {
+        max-width: 220px;
+        padding: 12px;
+        border: 1px solid #ffffff24;
+        background: #14151a;
+        color: white;
+        border-radius: 7px;
+      }
+
+      .td-season-tabs {
+        display: flex;
+        gap: 9px;
+        overflow-x: auto;
+        padding: 8px 0 18px;
+      }
+
+      .td-season-tab {
+        flex: 0 0 auto;
+        padding: 10px 15px;
+        background: #15161b;
+        color: #ddd;
+        border: 1px solid #ffffff18;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .td-season-tab.active {
+        background: var(--td-accent);
+        color: #fff;
+        border-color: var(--td-accent);
+      }
+
+      .td-status {
+        color: #9da0ab;
+        font-size: 13px;
+        padding: 12px 0;
+      }
+
+      .td-episodes {
+        display: grid;
+        gap: 12px;
+      }
+
+      .td-episode {
+        display: grid;
+        grid-template-columns: 155px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 17px;
+        padding: 13px;
+        border: 1px solid #ffffff12;
+        background: #111217;
+        border-radius: 9px;
+      }
+
+      .td-episode img {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        background: #20222a;
+        border-radius: 6px;
+      }
+
+      .td-episode h3 { font-size: 14px; margin: 0 0 7px; }
+
+      .td-episode p {
+        color: #a6a8b1;
+        font-size: 12px;
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      .td-episode button {
+        background: var(--td-accent);
+        color: white;
+        border: 0;
+        padding: 10px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .td-cast, .td-similar {
+        display: flex;
+        gap: 14px;
+        overflow-x: auto;
+        padding: 8px 0 18px;
+      }
+
+      .td-person {
+        flex: 0 0 120px;
+        color: #d9dae0;
+        font-size: 12px;
+      }
+
+      .td-person img {
+        width: 120px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 8px;
+        background: #1c1e25;
+        margin-bottom: 9px;
+      }
+
+      .td-person small {
+        display: block;
+        color: #9699a4;
+        margin-top: 4px;
+      }
+
+      .td-mini-card {
+        flex: 0 0 145px;
+        cursor: pointer;
+      }
+
+      .td-mini-card img {
+        width: 100%;
+        aspect-ratio: 2 / 3;
+        object-fit: cover;
+        background: #1c1e25;
+        border-radius: 8px;
+      }
+
+      .td-mini-card strong {
+        display: block;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+
+      .td-mini-card small {
+        color: #aaa;
+        font-size: 11px;
+      }
+
+      #titan-player {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: #000;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #titan-player[hidden] { display: none; }
+
+      .tp-toolbar {
+        height: 58px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 0 18px;
+        background: #0c0d10;
+      }
+
+      .tp-toolbar button {
+        border: 1px solid #ffffff22;
+        border-radius: 6px;
+        padding: 8px 12px;
+        background: #17181d;
+        color: #fff;
+        cursor: pointer;
+      }
+
+      #titan-player iframe {
+        flex: 1;
+        width: 100%;
+        min-height: 0;
+        border: 0;
+        background: #000;
+      }
+
+      @media (max-width: 760px) {
+        .td-content { width: 92%; }
+        .td-overview {
+          grid-template-columns: 110px minmax(0, 1fr);
+          gap: 17px;
+          align-items: start;
+          padding-top: 32px;
         }
-
-        function handleSearch() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const grid = document.getElementById('trendingGrid');
-            if (!query) {
-                renderGrid();
-                return;
-            }
-            const filtered = sampleMovies.filter(m => m.title.toLowerCase().includes(query));
-            grid.innerHTML = filtered.length ? filtered.map(movie => `
-                <div class="card" onclick="openModal('${movie.title}', '${movie.rating}', '${movie.year}', '${movie.poster}', '${movie.overview}')">
-                    <span class="rating-badge">${movie.rating}</span>
-                    <img src="${movie.poster}" alt="${movie.title}">
-                    <div class="card-title">${movie.title}</div>
-                </div>
-            `).join('') : '<p style="grid-column: 1/-1; text-align:center; color:#aaa; padding:20px;">لا توجد نتائج مطابقة</p>';
+        .td-poster-wrap { margin-top: 8px; }
+        #td-title {
+          font-size: clamp(27px, 7vw, 42px);
+          letter-spacing: -1px;
         }
-
-        function openModal(title, rating, year, poster, overview) {
-            const modal = document.getElementById('movieModal');
-            const body = document.getElementById('modalBody');
-            body.innerHTML = `
-                <img src="${poster}" style="width:100%; height:250px; object-fit:cover;">
-                <div style="padding:20px;">
-                    <h2 style="color:#fff; margin-bottom:10px;">${title}</h2>
-                    <p style="color:#aaa; font-size:0.9rem; margin-bottom:15px;">${year} &bull; <span style="color:#ffd700;">★ ${rating}</span></p>
-                    <p style="color:#ddd; font-size:0.95rem; line-height:1.5; margin-bottom:20px;">${overview}</p>
-                    <button style="width:100%; background:var(--primary-red); color:#fff; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:1rem; cursor:pointer;"><i class="fas fa-play" style="margin-left:8px;"></i>تشغيل الآن</button>
-                </div>
-            `;
-            modal.style.display = 'block';
+        .td-description {
+          font-size: 12px;
+          line-height: 1.7;
         }
-
-        function closeModal() {
-            document.getElementById('movieModal').style.display = 'none';
+        .td-actions { gap: 8px; }
+        .td-actions button {
+          padding: 0 10px;
+          font-size: 11px;
         }
+        .td-episode {
+          grid-template-columns: 100px minmax(0, 1fr);
+          gap: 11px;
+        }
+        .td-episode button {
+          grid-column: 1 / -1;
+        }
+        .td-section-heading {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
 
-        // Initialisation au chargement
-        window.onload = () => {
-            renderGrid();
+      @media (max-width: 420px) {
+        .td-overview {
+          grid-template-columns: 1fr;
+        }
+        .td-poster-wrap { max-width: 155px; }
+        .td-poster { aspect-ratio: 2 / 3; }
+      }
+    `;
+
+    document.head.appendChild(style);
+    document.body.appendChild(view);
+
+    $("#td-back").addEventListener("click", closeDetails);
+    $("#td-play").addEventListener("click", () => {
+      if (state.currentTitle) playTitle(state.currentTitle);
+    });
+
+    $("#td-list").addEventListener("click", () => {
+      if (state.currentTitle) toggleMyList(state.currentTitle);
+    });
+
+    $("#td-trailer").addEventListener("click", playTrailer);
+
+    $("#td-season-select").addEventListener("change", event => {
+      selectSeason(Number(event.target.value));
+    });
+
+    return view;
+  }
+
+  function ensurePlayer() {
+    let player = $("#titan-player");
+    if (player) return player;
+
+    player = document.createElement("section");
+    player.id = "titan-player";
+    player.hidden = true;
+
+    player.innerHTML = `
+      <div class="tp-toolbar">
+        <strong id="tp-title">TITAN Player</strong>
+        <button type="button" id="tp-close">Close Player</button>
+      </div>
+      <iframe
+        id="tp-frame"
+        title="Video player"
+        allow="autoplay; fullscreen; picture-in-picture"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen>
+      </iframe>
+    `;
+
+    document.body.appendChild(player);
+
+    $("#tp-close").addEventListener("click", closePlayer);
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        if (!$("#titan-player").hidden) closePlayer();
+        else if (!$("#titan-details-view").hidden) closeDetails();
+      }
+    });
+
+    return player;
+  }
+
+  function openDetails(item) {
+    if (!item || !getID(item)) {
+      notify("This title has no valid TMDB ID.");
+      return;
+    }
+
+    state.currentTitle = item;
+    state.currentDetails = null;
+    state.currentSeason = 1;
+
+    const view = ensureDetailsView();
+    view.hidden = false;
+    document.body.classList.add("modal-open");
+    view.scrollTop = 0;
+
+    const backdrop = $("#td-backdrop");
+    const poster = $("#td-poster");
+
+    backdrop.style.backgroundImage = item.backdrop
+      ? `url("${imageURL(item.backdrop, "original")}")`
+      : "none";
+
+    poster.src = imageURL(item.poster);
+    poster.alt = getTitle(item);
+
+    $("#td-title").textContent = getTitle(item);
+    $("#td-description").textContent =
+      item.description || item.overview || "No description available.";
+
+    $("#td-meta").innerHTML = `
+      <span class="td-rating">★ ${escapeHTML(formatRating(item.rating || item.vote_average))}</span>
+      <span>${escapeHTML(item.year || (item.release_date || item.first_air_date || "").slice(0, 4) || "Year unknown")}</span>
+      <span>${getType(item) === "tv" ? "TV Series" : "Movie"}</span>
+    `;
+
+    $("#td-facts").innerHTML = `
+      <span>Original language: ${escapeHTML(item.originalLanguage || item.original_language || "Unknown")}</span>
+      <span>TMDB ID: ${escapeHTML(getID(item))}</span>
+    `;
+
+    $("#td-list").textContent = isInMyList(item)
+      ? "✓ In My List"
+      : "+ My List";
+
+    const seasonsSection = $("#td-seasons-section");
+    seasonsSection.hidden = getType(item) !== "tv";
+
+    if (getType(item) === "tv") {
+      $("#td-season-tabs").replaceChildren();
+      $("#td-season-select").replaceChildren();
+      $("#td-episodes").replaceChildren();
+      $("#td-season-status").textContent = "Loading seasons...";
+
+      loadFullDetails(item);
+    } else {
+      loadFullDetails(item);
+    }
+
+    return view;
+  }
+
+  async function loadFullDetails(item) {
+    try {
+      const type = getType(item);
+      const data = await TITAN_API.details(getID(item), type);
+
+      state.currentDetails = data.raw || data;
+
+      if (state.currentTitle !== item) return;
+
+      const details = state.currentDetails;
+      const credits = details.credits || {};
+      const cast = (credits.cast || []).slice(0, 14);
+
+      $("#td-cast").innerHTML = cast.length
+        ? cast.map(person => `
+            <div class="td-person">
+              <img
+                loading="lazy"
+                src="${escapeHTML(imageURL(person.profile_path))}"
+                alt="${escapeHTML(person.name || "Cast member")}"
+                onerror="this.style.visibility='hidden'">
+              <strong>${escapeHTML(person.name || "Unknown")}</strong>
+              <small>${escapeHTML(person.character || "")}</small>
+            </div>
+          `).join("")
+        : `<p class="td-status">Cast information is not available.</p>`;
+
+      const recommendations = [
+        ...(details.recommendations?.results || []),
+        ...(details.similar?.results || [])
+      ];
+
+      const unique = new Map();
+
+      recommendations.forEach(result => {
+        const key = `${result.media_type || type}-${result.id}`;
+        if (!unique.has(key)) unique.set(key, result);
+      });
+
+      const related = [...unique.values()].slice(0, 12);
+
+      $("#td-similar").innerHTML = related.length
+        ? related.map(result => `
+            <div class="td-mini-card"
+                 data-related-id="${escapeHTML(result.id)}"
+                 data-related-type="${escapeHTML(result.media_type || type)}"
+                 tabindex="0" role="button">
+              <img
+                loading="lazy"
+                src="${escapeHTML(imageURL(result.poster_path))}"
+                alt="${escapeHTML(getTitle(result))}"
+                onerror="this.style.visibility='hidden'">
+              <strong>${escapeHTML(getTitle(result))}</strong>
+              <small>★ ${escapeHTML(formatRating(result.vote_average))}</small>
+            </div>
+          `).join("")
+        : `<p class="td-status">No recommendations available.</p>`;
+
+      $$(".td-mini-card", $("#td-similar")).forEach(card => {
+        const openRelated = async () => {
+          const id = card.dataset.relatedId;
+          const relatedType = card.dataset.relatedType;
+
+          try {
+            const result = await TITAN_API.details(id, relatedType);
+            openDetails(result);
+          } catch (error) {
+            console.error(error);
+            notify("Could not load this title.");
+          }
         };
-    </script>
-</body>
-</html>
-        // --- SYSTÈME D'ACTUALISATION AUTOMATIQUE (Chaque jour à 12h00) ---
-        function checkDailyRefresh() {
-            const lastRefresh = localStorage.getItem('titan_last_refresh');
-            const today = new Date().toDateString();
 
-            // Vérification de la date actuelle
-            if (lastRefresh !== today) {
-                const now = new Date();
-                // Si l'heure actuelle a dépassé 12h00
-                if (now.getHours() >= 12) {
-                    refreshTopTrendingContent();
-                    localStorage.setItem('titan_last_refresh', today);
-                }
+        card.addEventListener("click", openRelated);
+        card.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openRelated();
+          }
+        });
+      });
+
+      if (type === "tv") {
+        renderSeasons(details.seasons || [], item);
+      }
+    } catch (error) {
+      console.error("Could not load title details:", error);
+      if (getType(item) === "tv") {
+        $("#td-season-status").textContent =
+          "Season data could not be loaded. Check your TMDB configuration.";
+      }
+      notify("Some title information could not be loaded.");
+    }
+  }
+
+  function renderSeasons(seasons, item) {
+    const availableSeasons = seasons.filter(
+      season => Number(season.season_number) >= 0
+    );
+
+    const select = $("#td-season-select");
+    const tabs = $("#td-season-tabs");
+
+    select.replaceChildren();
+    tabs.replaceChildren();
+
+    if (!availableSeasons.length) {
+      $("#td-season-status").textContent =
+        "No season information is available for this series.";
+      return;
+    }
+
+    availableSeasons.forEach(season => {
+      const number = Number(season.season_number);
+      const label = number === 0 ? "Specials" : `Season ${number}`;
+
+      const option = document.createElement("option");
+      option.value = String(number);
+      option.textContent = label;
+      select.appendChild(option);
+
+      const tab = document.createElement("button");
+      tab.type = "button";
+      tab.className = "td-season-tab";
+      tab.dataset.season = String(number);
+      tab.textContent = label;
+
+      tab.addEventListener("click", () => selectSeason(number));
+      tabs.appendChild(tab);
+    });
+
+    const firstSeason =
+      availableSeasons.find(season => Number(season.season_number) === 1) ||
+      availableSeasons[0];
+
+    selectSeason(Number(firstSeason.season_number));
+  }
+
+  async function selectSeason(seasonNumber) {
+    const item = state.currentTitle;
+    if (!item || getType(item) !== "tv") return;
+
+    state.currentSeason = seasonNumber;
+    $("#td-season-select").value = String(seasonNumber);
+
+    $$(".td-season-tab").forEach(tab => {
+      tab.classList.toggle(
+        "active",
+        Number(tab.dataset.season) === seasonNumber
+      );
+    });
+
+    const key = `${getID(item)}-${seasonNumber}`;
+
+    $("#td-season-status").textContent = "Loading episodes...";
+    $("#td-episodes").replaceChildren();
+
+    try {
+      let data = state.seasonCache.get(key);
+
+      if (!data) {
+        data = await TITAN_API.season(getID(item), seasonNumber);
+        state.seasonCache.set(key, data);
+      }
+
+      if (state.currentTitle !== item ||
+          state.currentSeason !== seasonNumber) return;
+
+      const episodes = data.episodes || [];
+
+      $("#td-season-status").textContent =
+        `${data.name || `Season ${seasonNumber}`} · ${episodes.length} episodes`;
+
+      $("#td-episodes").innerHTML = episodes.map(episode => `
+        <article class="td-episode">
+          <img
+            loading="lazy"
+            src="${escapeHTML(imageURL(episode.still_path, "w500"))}"
+            alt="${escapeHTML(episode.name || "Episode image")}"
+            onerror="this.style.visibility='hidden'">
+          <div>
+            <h3>
+              Episode ${escapeHTML(episode.episode_number)}:
+              ${escapeHTML(episode.name || "Untitled Episode")}
+            </h3>
+            <p>${escapeHTML(episode.overview || "No episode description available.")}</p>
+            <p>
+              ${episode.runtime ? `${escapeHTML(episode.runtime)} min` : ""}
+              ${episode.vote_average ? ` · ★ ${escapeHTML(formatRating(episode.vote_average))}` : ""}
+            </p>
+          </div>
+          <button type="button"
+            data-play-season="${seasonNumber}"
+            data-play-episode="${Number(episode.episode_number)}">
+            Play Episode
+          </button>
+        </article>
+      `).join("");
+
+      $$("[data-play-season]", $("#td-episodes")).forEach(button => {
+        button.addEventListener("click", () => {
+          playTitle(item, {
+            season: Number(button.dataset.playSeason),
+            episode: Number(button.dataset.playEpisode)
+          });
+        });
+      });
+    } catch (error) {
+      console.error("Season request failed:", error);
+      $("#td-season-status").textContent =
+        "Episodes could not be loaded. Please check your TMDB API key and try again.";
+    }
+  }
+
+  function closeDetails() {
+    const view = $("#titan-details-view");
+    if (view) view.hidden = true;
+
+    document.body.classList.remove("modal-open");
+    state.currentTitle = null;
+    state.currentDetails = null;
+  }
+
+  function isInMyList(item) {
+    return state.list.some(entry =>
+      String(getID(entry)) === String(getID(item)) &&
+      getType(entry) === getType(item)
+    );
+  }
+
+  function toggleMyList(item) {
+    if (!item) return;
+
+    if (isInMyList(item)) {
+      state.list = state.list.filter(entry =>
+        !(String(getID(entry)) === String(getID(item)) &&
+          getType(entry) === getType(item))
+      );
+
+      notify("Removed from My List.");
+    } else {
+      state.list.unshift({
+        id: getID(item),
+        tmdbId: getID(item),
+        type: getType(item),
+        title: getTitle(item),
+        name: getTitle(item),
+        poster: item.poster || imageURL(item.poster_path),
+        backdrop: item.backdrop || imageURL(item.backdrop_path, "original"),
+        rating: item.rating || item.vote_average || 0,
+        year: item.year || "",
+        description: item.description || item.overview || ""
+      });
+
+      notify("Added to My List.");
+    }
+
+    saveStorage("titan-my-list", state.list);
+
+    const button = $("#td-list");
+    if (button && state.currentTitle) {
+      button.textContent = isInMyList(state.currentTitle)
+        ? "✓ In My List"
+        : "+ My List";
+    }
+
+    document.dispatchEvent(new CustomEvent("titan:list-updated", {
+      detail: { list: [...state.list] }
+    }));
+  }
+
+  function recordHistory(item, episodeInfo = null) {
+    const entry = {
+      id: getID(item),
+      type: getType(item),
+      title: getTitle(item),
+      poster: item.poster || imageURL(item.poster_path),
+      watchedAt: new Date().toISOString(),
+      season: episodeInfo?.season ?? null,
+      episode: episodeInfo?.episode ?? null
+    };
+
+    state.history = [
+      entry,
+      ...state.history.filter(old =>
+        !(String(old.id) === String(entry.id) &&
+          old.type === entry.type &&
+          old.season === entry.season &&
+          old.episode === entry.episode)
+      )
+    ].slice(0, 100);
+
+    saveStorage("titan-history", state.history);
+  }
+
+  function playTitle(item, episodeInfo = null) {
+    if (!item) return;
+
+    /*
+      Use a playback provider only for content you are authorized
+      to stream. Provider availability and terms can change.
+
+      Movie playback uses the provider's supported movie ID format.
+      TV playback requires a TMDB ID, season and episode.
+    */
+
+    const player = ensurePlayer();
+    const frame = $("#tp-frame");
+
+    let embedURL;
+
+    try {
+      if (typeof TITAN_API === "undefined" ||
+          typeof TITAN_API.embedUrl !== "function") {
+        throw new Error("TITAN_API is not loaded.");
+      }
+
+      const options = {
+        id: getID(item),
+        type: getType(item),
+        subtitleLanguage: "en",
+        autoplay: false
+      };
+
+      if (getType(item) === "tv") {
+        options.season = episodeInfo?.season ?? state.currentSeason ?? 1;
+        options.episode = episodeInfo?.episode ?? 1;
+      }
+
+      embedURL = TITAN_API.embedUrl(options);
+    } catch (error) {
+      console.error(error);
+      notify("Playback is not configured correctly.");
+      return;
+    }
+
+    $("#tp-title").textContent = getTitle(item);
+    player.hidden = false;
+    document.body.classList.add("modal-open");
+
+    frame.src = embedURL;
+    recordHistory(item, episodeInfo);
+  }
+
+  function closePlayer() {
+    const player = $("#titan-player");
+    if (player) {
+      player.hidden = true;
+      const frame = $("#tp-frame");
+      if (frame) frame.src = "about:blank";
+    }
+
+    document.body.classList.remove("modal-open");
+  }
+
+  function playTrailer() {
+    const details = state.currentDetails;
+    if (!details) {
+      notify("Trailer information is still loading.");
+      return;
+    }
+
+    const videos = details.videos?.results || [];
+    const trailer = videos.find(video =>
+      video.site === "YouTube" &&
+      video.type === "Trailer" &&
+      video.key
+    );
+
+    if (!trailer) {
+      notify("No official trailer is available for this title.");
+      return;
+    }
+
+    const player = ensurePlayer();
+    $("#tp-title").textContent = `${getTitle(state.currentTitle)} — Trailer`;
+    $("#tp-frame").src =
+      `https://www.youtube-nocookie.com/embed/${encodeURIComponent(trailer.key)}?autoplay=1`;
+
+    player.hidden = false;
+    document.body.classList.add("modal-open");
+  }
+
+  async function searchTitles(query, type = "multi") {
+    const trimmed = String(query || "").trim();
+    if (!trimmed) return [];
+
+    try {
+      const response = await TITAN_API.search(trimmed, type);
+      return response.results || [];
+    } catch (error) {
+      console.error("Search failed:", error);
+      notify("Search failed. Check your TMDB API configuration.");
+      return [];
+    }
+  }
+
+  function bindSearch(inputSelector, resultsSelector) {
+    const input = $(inputSelector);
+    const results = $(resultsSelector);
+
+    if (!input || !results) return;
+
+    input.addEventListener("input", () => {
+      clearTimeout(state.searchTimer);
+
+      const query = input.value.trim();
+
+      if (query.length < 2) {
+        results.replaceChildren();
+        return;
+      }
+
+      state.searchTimer = setTimeout(async () => {
+        results.innerHTML =
+          `<p class="td-status">Searching titles...</p>`;
+
+        const found = await searchTitles(query);
+
+        results.innerHTML = found.map(item => `
+          <button type="button"
+            class="titan-search-result"
+            data-search-id="${escapeHTML(item.id)}"
+            data-search-type="${escapeHTML(item.type)}">
+            <img
+              src="${escapeHTML(item.poster || "")}"
+              alt=""
+              loading="lazy">
+            <span>
+              <strong>${escapeHTML(item.title)}</strong>
+              <small>
+                ${escapeHTML(item.year || "Year unknown")}
+                · ${escapeHTML(item.type)}
+                · ★ ${escapeHTML(formatRating(item.rating))}
+              </small>
+            </span>
+          </button>
+        `).join("") || `<p class="td-status">No results found.</p>`;
+
+        $$(".titan-search-result", results).forEach(button => {
+          button.addEventListener("click", async () => {
+            try {
+              const item = await TITAN_API.details(
+                button.dataset.searchId,
+                button.dataset.searchType
+              );
+
+              openDetails(item);
+            } catch (error) {
+              console.error(error);
+              notify("Could not open this title.");
             }
-        }
+          });
+        });
+      }, 350);
+    });
+  }
 
-        function refreshTopTrendingContent() {
-            console.log("TITAN: Actualisation quotidienne du contenu le plus vu effectuée avec succès à 12:00.");
-            // Mélange aléatoire pour simuler le changement des tendances quotidiennes
-            sampleMovies.sort(() => Math.random() - 0.5);
-            renderGrid();
-        }
+  function bindExistingCards() {
+    document.addEventListener("click", async event => {
+      const card = event.target.closest("[data-tmdb-id]");
+      if (!card) return;
 
-        // --- GESTION DE LA BIBLIOTHÈQUE / WATCHLIST (Local Storage) ---
-        function getWatchlist() {
-            return JSON.parse(localStorage.getItem('titan_watchlist')) || [];
-        }
+      if (event.target.closest("button, a")) return;
 
-        function toggleWatchlist(movieId) {
-            let watchlist = getWatchlist();
-            const index = watchlist.indexOf(movieId);
-            if (index === -1) {
-                watchlist.push(movieId);
-                alert("تمت إضافة الفيلم إلى مكتبتك بنجاح.");
-            } else {
-                watchlist.splice(index, 1);
-                alert("تمت إزالة الفيلم من مكتبتك.");
-            }
-            localStorage.setItem('titan_watchlist', JSON.stringify(watchlist));
-        }
+      const id = card.dataset.tmdbId;
+      const type = card.dataset.tmdbType || "movie";
 
-        // --- LECTEUR VIDÉO INTERACTIF ---
-        function playVideo(title) {
-            const modalBody = document.getElementById('modalBody');
-            modalBody.innerHTML = `
-                <div style="position:relative; padding-top:56.25%; background:#000;">
-                    <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" 
-                            style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" 
-                            allow="autoplay; encrypted-media" allowfullscreen></iframe>
-                </div>
-                <div style="padding:15px; text-align:center;">
-                    <h3 style="color:#fff;">جاري عرض: ${title}</h3>
-                    <p style="color:#aaa; font-size:0.85rem; margin-top:5px;">سيرفر البث الرئيسي • جودة عالية 4K</p>
-                    <button onclick="closeModal()" style="margin-top:15px; background:#333; color:#fff; border:none; padding:8px 20px; border-radius:4px; cursor:pointer;">إغلاق</button>
-                </div>
-            `;
-        }
+      try {
+        const item = await TITAN_API.details(id, type);
+        openDetails(item);
+      } catch (error) {
+        console.error(error);
+        notify("Could not load title details.");
+      }
+    });
+  }
 
-        // Vérification de l'actualisation au chargement de la page
-        setInterval(checkDailyRefresh, 60000); // Vérifie chaque minute
-        checkDailyRefresh();
-            <!-- Catégories et Filtres Dynamiques -->
-    <style>
-        .category-scroll {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding: 10px 0;
-            margin-bottom: 15px;
-            scrollbar-width: none; /* Firefox */
-        }
-        .category-scroll::-webkit-scrollbar {
-            display: none; /* Chrome / Safari */
-        }
-        .chip {
-            background-color: #222;
-            color: var(--text-gray);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            white-space: nowrap;
-            cursor: pointer;
-            border: 1px solid #333;
-            transition: all 0.3s ease;
-        }
-        .chip.active, .chip:hover {
-            background-color: var(--primary-red);
-            color: var(--text-white);
-            border-color: var(--primary-red);
-        }
-    </style>
+  function addCardDataAttributes() {
+    /*
+      Existing poster cards can opt into details by including:
+      data-tmdb-id="550" data-tmdb-type="movie"
+    */
+    $$("[data-tmdb-id]").forEach(card => {
+      card.style.cursor = "pointer";
+    });
+  }
 
-    <div class="category-scroll" id="categoryChips">
-        <div class="chip active" onclick="filterCategory('all', this)">الكل</div>
-        <div class="chip" onclick="filterCategory('kdrama', this)">كوريا دراما (K-Drama)</div>
-        <div class="chip" onclick="filterCategory('action', this)">أكشن</div>
-        <div class="chip" onclick="filterCategory('scifi', this)">خيال علمي</div>
-        <div class="chip" onclick="filterCategory('top_playlist', this)">Top Playlist</div>
-    </div>
-            // Data étendue pour les différentes catégories
-        const categoryData = {
-            kdrama: [
-                { id: 101, title: "Squid Game: Season 2", rating: "8.8", year: "2025", poster: "https://image.tmdb.org/t/p/w500/dA3v331fOf33Kx1q9y9G0m0E.jpg", overview: "La suite palpitante du phénomène mondial sud-coréen." },
-                { id: 102, title: "All of Us Are Dead", rating: "8.4", year: "2024", poster: "https://image.tmdb.org/t/p/w500/8O392z25s4050G235f3G.jpg", overview: "Des étudiants luttent pour leur survie face à une épidémie de zombies." }
-            ],
-            action: [
-                { id: 201, title: "John Wick: Chapter 4", rating: "8.9", year: "2023", poster: "https://image.tmdb.org/t/p/w500/vZloFAK7N33S228s4050G.jpg", overview: "John Wick découvre un moyen de vaincre la Grande Table." },
-                { id: 202, title: "Extraction 2", rating: "7.9", year: "2023", poster: "https://image.tmdb.org/t/p/w500/7i88z25s4050G235f3G.jpg", overview: "Tyler Rake entreprend une nouvelle mission à haut risque." }
-            ],
-            scifi: [
-                { id: 301, title: "Dune: Part Two", rating: "8.7", year: "2024", poster: "https://image.tmdb.org/t/p/w500/1pdfLvkA32328s4050G.jpg", overview: "Paul Atréides s'unit à Chani et aux Fremen pour mener la révolte." },
-                { id: 302, title: "Interstellar", rating: "8.6", year: "2014", poster: "https://image.tmdb.org/t/p/w500/gEU228s4050G235f3G.jpg", overview: "Une équipe d'explorateurs voyage à travers un trou de ver." }
-            ],
-            top_playlist: [
-                { id: 401, title: "Marvel Cinematic Universe", rating: "9.1", year: "MCU", poster: "https://image.tmdb.org/t/p/w500/qNBAXBIQlnOtrVvAWMHtDC3g3RC.jpg", overview: "Collection complète des films et séries de l'univers Marvel." },
-                { id: 402, title: "DC Extended Universe", rating: "8.5", year: "DCEU", poster: "https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg", overview: "L'univers cinématographique des super-héros DC." }
-            ]
-        };
+  function bindNavigation() {
+    const nav = $("#topbar");
 
-        function filterCategory(cat, chipElement) {
-            // Mettre à jour la puce active
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            chipElement.classList.add('active');
+    if (nav) {
+      window.addEventListener("scroll", () => {
+        nav.classList.toggle("scrolled", window.scrollY > 30);
+      }, { passive: true });
+    }
 
-            const grid = document.getElementById('trendingGrid');
-            let itemsToDisplay = [];
+    document.addEventListener("click", event => {
+      const favoriteButton = event.target.closest("[data-favorite-id]");
+      if (!favoriteButton) return;
 
-            if (cat === 'all') {
-                itemsToDisplay = sampleMovies;
-            } else {
-                itemsToDisplay = categoryData[cat] || [];
-            }
+      event.preventDefault();
+      event.stopPropagation();
 
-            if (itemsToDisplay.length === 0) {
-                grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#aaa; padding:20px;">لا يوجد محتوى متوفر حالياً</p>';
-                return;
-            }
+      const id = favoriteButton.dataset.favoriteId;
+      const type = favoriteButton.dataset.favoriteType || "movie";
+      const title = favoriteButton.dataset.favoriteTitle || "Untitled";
+      const poster = favoriteButton.dataset.favoritePoster || "";
 
-            grid.innerHTML = itemsToDisplay.map(movie => `
-                <div class="card" onclick="openModal('${movie.title}', '${movie.rating}', '${movie.year}', '${movie.poster}', '${movie.overview.replace(/'/g, "\\'")}')">
-                    <span class="rating-badge"><i class="fas fa-star" style="color:#ffd700; margin-left:3px;"></i>${movie.rating}</span>
-                    <img src="${movie.poster}" alt="${movie.title}" onerror="this.src='https://via.placeholder.com/150x225/181818/ffffff?text=Poster'">
-                    <div class="card-title">${movie.title}</div>
-                </div>
-            `).join('');
-        }
-                // --- GESTION DE L'AFFICHAGE DE LA BIBLIOTHÈQUE ---
-        function renderLibrary() {
-            const grid = document.getElementById('trendingGrid');
-            const watchlistIds = getWatchlist();
-            
-            // Combiner toutes les sources pour retrouver les films enregistrés
-            const allAvailableItems = [...sampleMovies, ...categoryData.kdrama, ...categoryData.action, ...categoryData.scifi, ...categoryData.top_playlist];
-            const savedMovies = allAvailableItems.filter(m => watchlistIds.includes(m.id) || watchlistIds.includes(String(m.id)));
+      toggleMyList({
+        id,
+        tmdbId: id,
+        type,
+        title,
+        name: title,
+        poster
+      });
+    });
+  }
 
-            document.querySelector('.section-title span').innerText = "قائمتي المفضلة (Library)";
+  function exposePublicMethods() {
+    window.TITAN = {
+      openDetails,
+      closeDetails,
+      playTitle,
+      closePlayer,
+      toggleMyList,
+      isInMyList,
+      getMyList: () => [...state.list],
+      getHistory: () => [...state.history],
+      searchTitles,
+      getCurrentTitle: () => state.currentTitle
+    };
+  }
 
-            if (savedMovies.length === 0) {
-                grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#aaa; padding:30px;">لم تقم بإضافة أي فيلم أو مسلسل إلى مكتبتك بعد.</p>';
-                return;
-            }
+  function init() {
+    if (typeof TITAN_API === "undefined") {
+      console.error(
+        "TITAN_API is missing. Load the API integration before this script."
+      );
+      return;
+    }
 
-            grid.innerHTML = savedMovies.map(movie => `
-                <div class="card" onclick="openModal('${movie.title}', '${movie.rating}', '${movie.year}', '${movie.poster}', '${movie.overview.replace(/'/g, "\\'")}')">
-                    <span class="rating-badge"><i class="fas fa-star" style="color:#ffd700; margin-left:3px;"></i>${movie.rating}</span>
-                    <img src="${movie.poster}" alt="${movie.title}">
-                    <div class="card-title">${movie.title}</div>
-                </div>
-            `).join('');
-        }
-            <!-- Hero Slider / Carrousel à défilement horizontal -->
-    <style>
-        .hero-slider {
-            display: flex;
-            gap: 15px;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            padding: 10px 0;
-            margin-bottom: 20px;
-            scrollbar-width: none;
-        }
-        .hero-slider::-webkit-scrollbar {
-            display: none;
-        }
-        .hero-card {
-            flex: 0 0 85%;
-            scroll-snap-align: center;
-            position: relative;
-            border-radius: 12px;
-            overflow: hidden;
-            height: 220px;
-            background-size: cover;
-            background-position: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-        }
-        .hero-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 20px 15px;
-            background: linear-gradient(transparent, rgba(0,0,0,0.95));
-        }
-        .hero-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #fff;
-            margin-bottom: 5px;
-        }
-        .hero-meta {
-            font-size: 0.8rem;
-            color: #ccc;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-    </style>
+    ensureDetailsView();
+    ensurePlayer();
+    bindExistingCards();
+    bindNavigation();
+    addCardDataAttributes();
+    exposePublicMethods();
 
-    <div class="hero-slider" id="heroSlider">
-        <div class="hero-card" style="background-image: url('https://image.tmdb.org/t/p/w500/qNBAXBIQlnOtrVvAWMHtDC3g3RC.jpg');" onclick="openModal('Spider-Man: Brand New Day', '8.5', '2026', 'https://image.tmdb.org/t/p/w500/qNBAXBIQlnOtrVvAWMHtDC3g3RC.jpg', 'Fighting crime full-time as Spider-Man in a world that does not remember him...')">
-            <div class="hero-overlay">
-                <div class="hero-title">Spider-Man: Brand New Day</div>
-                <div class="hero-meta">
-                    <span>2026</span> &bull; 
-                    <span style="color:#ffd700;"><i class="fas fa-star"></i> 8.5</span> &bull; 
-                    <span>Spider-Man Collection</span>
-                </div>
-            </div>
-        </div>
-        <div class="hero-card" style="background-image: url('https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg');" onclick="openModal('Clayface', '7.3', '2026', 'https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg', 'A dark thriller following the transformation of a tragic character.')">
-            <div class="hero-overlay">
-                <div class="hero-title">Clayface</div>
-                <div class="hero-meta">
-                    <span>2026</span> &bull; 
-                    <span style="color:#ffd700;"><i class="fas fa-star"></i> 7.3</span> &bull; 
-                    <span>Thriller / Action</span>
-                </div>
-            </div>
-        </div>
-    </div>
-            // --- MODULE DISCOVER / EXPLORATION DYNAMIQUE ---
-        function renderDiscover() {
-            document.querySelector('.section-title span').innerText = "اكتشف الجديد المميز (Discover)";
-            const grid = document.getElementById('trendingGrid');
-            
-            // Rassemblement et affichage de tout le catalogue filtré
-            const discoverItems = [...categoryData.kdrama, ...categoryData.scifi, ...categoryData.action];
-            grid.innerHTML = discoverItems.map(movie => `
-                <div class="card" onclick="openModal('${movie.title}', '${movie.rating}', '${movie.year}', '${movie.poster}', '${movie.overview.replace(/'/g, "\\'")}')">
-                    <span class="rating-badge"><i class="fas fa-star" style="color:#ffd700; margin-left:3px;"></i>${movie.rating}</span>
-                    <img src="${movie.poster}" alt="${movie.title}">
-                    <div class="card-title">${movie.title}</div>
-                </div>
-            `).join('');
-        }
-سأرسل لك الآن الجزء التاسع الأخير متضمناً مشغل الفيديو التفاعلي، مع الشرح والتعليقات باللغة الإنجليزية كما طلبت.
-استبدل هذا الكود في نهاية ملفك أو ألحقه به:
-        // --- ADVANCED INTERACTIVE VIDEO PLAYER ---
-        function playVideo(title) {
-            const modalBody = document.getElementById('modalBody');
-            
-            // Video Player HTML Structure with Server Selection & Subtitles
-            modalBody.innerHTML = `
-                <div class="video-player-container" style="position:relative; width:100%; padding-top:56.25%; background:#000;">
-                    <iframe id="videoIframe" 
-                            src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&enablejsapi=1" 
-                            style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" 
-                            allow="autoplay; encrypted-media; fullscreen" 
-                            allowfullscreen>
-                    </iframe>
-                </div>
-                
-                <div class="player-controls" style="padding:20px; background:#141414; color:#fff;">
-                    <h3 style="margin-bottom:8px; font-size:1.2rem;">Playing: ${title}</h3>
-                    <p style="color:#aaa; font-size:0.85rem; margin-bottom:20px;">Streaming Server: <span style="color:var(--primary-red);">CDN-VIP Stream (4K)</span></p>
-                    
-                    <div style="margin-bottom:15px;">
-                        <label style="display:block; font-size:0.8rem; color:#888; margin-bottom:8px;">SELECT SERVER SOURCE:</label>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                            <button onclick="changeServer('https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1')" style="background:#222; border:1px solid var(--primary-red); color:#fff; padding:10px; border-radius:4px; cursor:pointer; font-weight:bold;">Server Alpha (Fast)</button>
-                            <button onclick="changeServer('https://www.youtube.com/embed/kJQP7kiw5Fk?autoplay=1')" style="background:#222; border:1px solid #333; color:#aaa; padding:10px; border-radius:4px; cursor:pointer;">Server Beta (Backup)</button>
-                        </div>
-                    </div>
+    /*
+      If your page includes these search elements, live search
+      will be activated automatically.
+    */
+    bindSearch("#titan-search-input", "#titan-search-results");
+    bindSearch("#search-input", "#search-results");
 
-                    <div style="margin-bottom:20px;">
-                        <label style="display:block; font-size:0.8rem; color:#888; margin-bottom:8px;">SUBTITLES:</label>
-                        <select onchange="console.log('Subtitles switched to:', this.value)" style="width:100%; padding:10px; background:#222; color:#fff; border:1px solid #333; border-radius:4px; outline:none;">
-                            <option value="off">Off</option>
-                            <option value="ar" selected>Arabic (العربية)</option>
-                            <option value="en">English</option>
-                            <option value="fr">French (Français)</option>
-                        </select>
-                    </div>
+    console.info("TITAN Part 4 initialized.");
+  }
 
-                    <div style="display:flex; gap:10px;">
-                        <button onclick="toggleFullScreen()" style="flex:1; background:#333; color:#fff; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer;"><i class="fas fa-expand"></i> Fullscreen</button>
-                        <button onclick="closeModal()" style="flex:1; background:var(--primary-red); color:#fff; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer;">Close Player</button>
-                    </div>
-                </div>
-            `;
-        }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
+  } else {
+    init();
+  }
 
-        function changeServer(serverUrl) {
-            const iframe = document.getElementById('videoIframe');
-            if (iframe) {
-                iframe.src = serverUrl;
-                alert("Server switched successfully.");
-            }
-        }
-
-        function toggleFullScreen() {
-            const container = document.querySelector('.video-player-container');
-            if (!document.fullscreenElement) {
-                if (container.requestFullscreen) {
-                    container.requestFullscreen();
-                }
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
-            }
-        }
-
-
+  return {
+    openDetails,
+    closeDetails,
+    playTitle,
+    closePlayer,
+    toggleMyList,
+    searchTitles
+  };
+})();
+</script>
+<article class="poster-card"
+         data-tmdb-id="550"
+         data-tmdb-type="movie">
+  <!-- Your existing poster image and rating go here. -->
+</article>
