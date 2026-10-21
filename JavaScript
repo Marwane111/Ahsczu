@@ -1,0 +1,120 @@
+"use strict";
+
+const TITAN_TMDB = {
+  baseURL: "https://api.themoviedb.org/3",
+  imageURL: "https://image.tmdb.org/t/p/w500",
+
+  // Add your TMDB API Read Access Token here.
+  accessToken: "YOUR_TMDB_READ_ACCESS_TOKEN",
+
+  language: "en-US"
+};
+
+async function getTMDBDetails(id, type = "movie") {
+  if (!["movie", "tv"].includes(type)) {
+    throw new Error("Unsupported content type.");
+  }
+
+  if (!id || !/^\d+$/.test(String(id))) {
+    throw new Error("Invalid TMDB ID.");
+  }
+
+  const url = new URL(
+    `${TITAN_TMDB.baseURL}/${type}/${id}`
+  );
+
+  url.searchParams.set("language", TITAN_TMDB.language);
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${TITAN_TMDB.accessToken}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`TMDB request failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function getTMDBImage(path) {
+  return path
+    ? `${TITAN_TMDB.imageURL}${path}`
+    : "";
+}
+
+function updatePosterCard(card, data, type) {
+  const title = data.title || data.name || "Unknown title";
+  const rating = Number(data.vote_average || 0).toFixed(1);
+  const overview = data.overview || "No description available.";
+  const releaseDate = data.release_date || data.first_air_date || "";
+  const posterURL = getTMDBImage(data.poster_path);
+
+  card.dataset.loaded = "true";
+  card.dataset.tmdbTitle = title;
+  card.dataset.tmdbRating = rating;
+
+  // Update existing elements only.
+  const image = card.querySelector("img");
+  const titleElement = card.querySelector("[data-tmdb-title]");
+  const ratingElement = card.querySelector("[data-tmdb-rating]");
+  const overviewElement = card.querySelector("[data-tmdb-overview]");
+  const dateElement = card.querySelector("[data-tmdb-date]");
+
+  if (image && posterURL) {
+    image.src = posterURL;
+    image.alt = title;
+    image.loading = "lazy";
+  }
+
+  if (titleElement) {
+    titleElement.textContent = title;
+  }
+
+  if (ratingElement) {
+    ratingElement.textContent = rating;
+  }
+
+  if (overviewElement) {
+    overviewElement.textContent = overview;
+  }
+
+  if (dateElement) {
+    dateElement.textContent = releaseDate;
+  }
+
+  card.setAttribute("aria-label", `${title}, rating ${rating}`);
+}
+
+async function loadTitanPosters() {
+  const cards = document.querySelectorAll(
+    ".poster-card[data-tmdb-id][data-tmdb-type]"
+  );
+
+  for (const card of cards) {
+    if (card.dataset.loaded === "true") continue;
+
+    const id = card.dataset.tmdbId;
+    const type = card.dataset.tmdbType;
+
+    try {
+      card.dataset.loading = "true";
+
+      const data = await getTMDBDetails(id, type);
+
+      updatePosterCard(card, data, type);
+
+      delete card.dataset.error;
+    } catch (error) {
+      console.error("TITAN poster error:", id, error);
+      card.dataset.error = "true";
+    } finally {
+      delete card.dataset.loading;
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadTitanPosters);
