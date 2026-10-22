@@ -537,3 +537,271 @@ const TITANSearch = (() => {
 document.addEventListener("DOMContentLoaded", () => {
   TITANSearch.init();
 });
+"use strict";
+
+const TITANWatchlist = (() => {
+  const STORAGE_KEY = "titan-watchlist-v1";
+
+  let items = loadItems();
+
+  function loadItems() {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem(STORAGE_KEY) || "[]"
+      );
+
+      if (!Array.isArray(saved)) return [];
+
+      return saved.filter(item =>
+        item &&
+        ["movie", "tv"].includes(item.type) &&
+        /^\d+$/.test(String(item.id))
+      );
+    } catch (error) {
+      console.warn("Unable to load watchlist.", error);
+      return [];
+    }
+  }
+
+  function saveItems() {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(items)
+      );
+
+      return true;
+    } catch (error) {
+      console.error("Unable to save watchlist.", error);
+      return false;
+    }
+  }
+
+  function getCardData(card) {
+    const image = card.querySelector("img");
+
+    return {
+      id: String(card.dataset.tmdbId),
+      type: card.dataset.tmdbType,
+      title:
+        card.dataset.tmdbTitle ||
+        card.querySelector("[data-tmdb-title]")?.textContent ||
+        "Untitled",
+      rating:
+        card.dataset.tmdbRating ||
+        card.querySelector("[data-tmdb-rating]")?.textContent ||
+        "",
+      poster: image?.currentSrc || image?.src || ""
+    };
+  }
+
+  function findItem(id, type) {
+    return items.find(item =>
+      String(item.id) === String(id) &&
+      item.type === type
+    );
+  }
+
+  function add(item) {
+    if (
+      !item ||
+      !["movie", "tv"].includes(item.type) ||
+      !/^\d+$/.test(String(item.id))
+    ) {
+      return false;
+    }
+
+    if (findItem(item.id, item.type)) {
+      return false;
+    }
+
+    items.push({
+      id: String(item.id),
+      type: item.type,
+      title: String(item.title || "Untitled"),
+      rating: String(item.rating || ""),
+      poster: String(item.poster || ""),
+      addedAt: new Date().toISOString()
+    });
+
+    if (!saveItems()) {
+      items.pop();
+      return false;
+    }
+
+    render();
+    updateButtons();
+
+    return true;
+  }
+
+  function remove(id, type) {
+    const previousItems = [...items];
+
+    items = items.filter(item =>
+      !(
+        String(item.id) === String(id) &&
+        item.type === type
+      )
+    );
+
+    if (!saveItems()) {
+      items = previousItems;
+      return false;
+    }
+
+    render();
+    updateButtons();
+
+    return true;
+  }
+
+  function toggleCard(card) {
+    const item = getCardData(card);
+
+    if (findItem(item.id, item.type)) {
+      return remove(item.id, item.type);
+    }
+
+    return add(item);
+  }
+
+  function updateButtons() {
+    document.querySelectorAll(
+      ".poster-card[data-tmdb-id][data-tmdb-type]"
+    ).forEach(card => {
+      const item = getCardData(card);
+      const button = card.querySelector("[data-watchlist-toggle]");
+
+      if (!button) return;
+
+      const saved = Boolean(findItem(item.id, item.type));
+
+      button.textContent = saved
+        ? "Remove from Watchlist"
+        : "Add to Watchlist";
+
+      button.setAttribute("aria-pressed", String(saved));
+    });
+  }
+
+  function createWatchlistCard(item) {
+    const card = document.createElement("article");
+    card.className = "poster-card";
+    card.dataset.tmdbId = item.id;
+    card.dataset.tmdbType = item.type;
+    card.dataset.tmdbTitle = item.title;
+    card.dataset.tmdbRating = item.rating;
+
+    const image = document.createElement("img");
+    image.className = "poster-card__image";
+    image.loading = "lazy";
+    image.alt = item.title;
+    image.src = item.poster;
+    image.hidden = !item.poster;
+
+    const details = document.createElement("div");
+    details.className = "poster-card__details";
+
+    const title = document.createElement("h3");
+    title.dataset.tmdbTitle = "";
+    title.textContent = item.title;
+
+    const rating = document.createElement("span");
+    rating.dataset.tmdbRating = "";
+    rating.textContent = item.rating
+      ? `★ ${item.rating}`
+      : "";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "watchlist-remove";
+    button.textContent = "Remove";
+    button.addEventListener("click", () => {
+      remove(item.id, item.type);
+    });
+
+    details.append(title, rating, button);
+    card.append(image, details);
+
+    return card;
+  }
+
+  function render() {
+    const container = document.querySelector(
+      "#titan-watchlist-items"
+    );
+
+    const emptyMessage = document.querySelector(
+      "#titan-watchlist-empty"
+    );
+
+    const count = document.querySelector(
+      "#titan-watchlist-count"
+    );
+
+    if (count) {
+      count.textContent = String(items.length);
+    }
+
+    if (!container) return;
+
+    container.replaceChildren();
+
+    if (emptyMessage) {
+      emptyMessage.hidden = items.length > 0;
+    }
+
+    items.forEach(item => {
+      container.appendChild(createWatchlistCard(item));
+    });
+  }
+
+  function init() {
+    document.addEventListener("click", event => {
+      const button = event.target.closest(
+        "[data-watchlist-toggle]"
+      );
+
+      if (!button) return;
+
+      const card = button.closest(
+        ".poster-card[data-tmdb-id][data-tmdb-type]"
+      );
+
+      if (!card) return;
+
+      event.preventDefault();
+      toggleCard(card);
+    });
+
+    const observer = new MutationObserver(() => {
+      updateButtons();
+    });
+
+    document.querySelectorAll(
+      "#titan-search-results"
+    ).forEach(container => {
+      observer.observe(container, {
+        childList: true,
+        subtree: true
+      });
+    });
+
+    render();
+    updateButtons();
+  }
+
+  return {
+    init,
+    add,
+    remove,
+    render,
+    updateButtons,
+    toggleCard
+  };
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+  TITANWatchlist.init();
+});
