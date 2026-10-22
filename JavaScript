@@ -1765,3 +1765,197 @@ service cloud.firestore {
     }
   }
 }
+
+"use strict";
+
+const TITANDiscover = (() => {
+  const API_BASE = "https://api.themoviedb.org/3";
+  const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
+
+  // Use your existing TMDB Read Access Token.
+  const API_TOKEN = "YOUR_TMDB_READ_ACCESS_TOKEN";
+
+  const sections = [
+    {
+      id: "titan-trending",
+      title: "Trending This Week",
+      endpoint: "/trending/all/week",
+      type: "multi"
+    },
+    {
+      id: "titan-top-rated",
+      title: "Top Rated Movies",
+      endpoint: "/movie/top_rated",
+      type: "movie"
+    },
+    {
+      id: "titan-new-releases",
+      title: "Now Playing",
+      endpoint: "/movie/now_playing",
+      type: "movie"
+    },
+    {
+      id: "titan-trending-series",
+      title: "Trending TV Series",
+      endpoint: "/trending/tv/week",
+      type: "tv"
+    }
+  ];
+
+  async function fetchTitles(endpoint) {
+    if (
+      !API_TOKEN ||
+      API_TOKEN === "YOUR_TMDB_READ_ACCESS_TOKEN"
+    ) {
+      throw new Error("TMDB API token is missing.");
+    }
+
+    const url = new URL(API_BASE + endpoint);
+    url.searchParams.set("language", "en-US");
+    url.searchParams.set("page", "1");
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${API_TOKEN}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`TMDB returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.results || [];
+  }
+
+  function createPoster(item, sectionType) {
+    const type = item.media_type ||
+      (sectionType === "multi" ? "movie" : sectionType);
+
+    if (!["movie", "tv"].includes(type)) return null;
+
+    const title = item.title || item.name || "Untitled";
+    const date = item.release_date || item.first_air_date || "";
+
+    const card = document.createElement("article");
+    card.className = "poster-card";
+    card.dataset.tmdbId = String(item.id);
+    card.dataset.tmdbType = type;
+    card.dataset.tmdbTitle = title;
+    card.dataset.tmdbRating = Number(
+      item.vote_average || 0
+    ).toFixed(1);
+    card.tabIndex = 0;
+
+    const image = document.createElement("img");
+    image.className = "poster-card__image";
+    image.loading = "lazy";
+    image.alt = title;
+
+    if (item.poster_path) {
+      image.src = IMAGE_BASE + item.poster_path;
+    } else {
+      image.alt = `${title} — poster unavailable`;
+    }
+
+    const details = document.createElement("div");
+    details.className = "poster-card__details";
+
+    const heading = document.createElement("h3");
+    heading.dataset.tmdbTitle = "";
+    heading.textContent = title;
+
+    const metadata = document.createElement("div");
+    metadata.className = "discover-card__metadata";
+
+    const rating = document.createElement("span");
+    rating.dataset.tmdbRating = "";
+    rating.textContent = `★ ${Number(
+      item.vote_average || 0
+    ).toFixed(1)}`;
+
+    const year = document.createElement("span");
+    year.dataset.tmdbDate = "";
+    year.textContent = date ? date.slice(0, 4) : "";
+
+    const overview = document.createElement("p");
+    overview.dataset.tmdbOverview = "";
+    overview.hidden = true;
+    overview.textContent =
+      item.overview || "No description available.";
+
+    const saveButton = document.createElement("button");
+    saveButton.type = "button";
+    saveButton.className = "discover-card__save";
+    saveButton.dataset.cloudSave = "";
+    saveButton.textContent = "Save to My Account";
+
+    metadata.append(rating, year);
+    details.append(heading, metadata, overview, saveButton);
+    card.append(image, details);
+
+    return card;
+  }
+
+  async function loadSection(section) {
+    const container = document.getElementById(section.id);
+    const status = document.querySelector(
+      `[data-discover-status="${section.id}"]`
+    );
+
+    if (!container) return;
+
+    if (status) status.textContent = "Loading titles...";
+
+    try {
+      const titles = await fetchTitles(section.endpoint);
+      const fragment = document.createDocumentFragment();
+
+      titles.forEach(item => {
+        if (!item.poster_path) return;
+
+        const card = createPoster(item, section.type);
+        if (card) fragment.appendChild(card);
+      });
+
+      container.replaceChildren(fragment);
+
+      if (status) {
+        status.textContent = container.children.length
+          ? `${container.children.length} titles`
+          : "No titles available right now.";
+      }
+    } catch (error) {
+      console.error(`TITAN discovery error: ${section.id}`, error);
+
+      if (status) {
+        status.textContent =
+          "Unable to load titles. Please try again.";
+      }
+    }
+  }
+
+  function init() {
+    sections.forEach(section => {
+      loadSection(section);
+    });
+
+    document.querySelectorAll("[data-discover-refresh]")
+      .forEach(button => {
+        button.addEventListener("click", () => {
+          const section = sections.find(
+            item => item.id === button.dataset.discoverRefresh
+          );
+
+          if (section) loadSection(section);
+        });
+      });
+  }
+
+  return { init, loadSection };
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+  TITANDiscover.init();
+});
