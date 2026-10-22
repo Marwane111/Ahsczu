@@ -1455,3 +1455,27 @@ const TITAN_APP = (() => {
   </div>
 </section>
 <script type="module" src="account.js"></script>
+<section class="titan-cloud-watchlist" id="cloud-watchlist">
+  <header>
+    <h2>My Cloud Watchlist</h2>
+
+    <button id="cloud-watchlist-refresh" type="button">
+      Refresh
+    </button>
+  </header>
+
+  <p id="cloud-watchlist-signin">
+    Sign in to access your saved titles across devices.
+  </p>
+
+  <p id="cloud-watchlist-status" role="status" aria-live="polite"></p>
+
+  <p id="cloud-watchlist-empty" hidden>
+    Your cloud watchlist is empty.
+  </p>
+
+  <div
+    id="cloud-watchlist-items"
+    class="titan-search__results"
+  ></div>
+</section>
