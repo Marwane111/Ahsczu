@@ -805,3 +805,11 @@ const TITANWatchlist = (() => {
 document.addEventListener("DOMContentLoaded", () => {
   TITANWatchlist.init();
 });
+const watchlistButton = document.createElement("button");
+
+watchlistButton.type = "button";
+watchlistButton.dataset.watchlistToggle = "";
+watchlistButton.textContent = "Add to Watchlist";
+watchlistButton.className = "watchlist-toggle";
+
+details.appendChild(watchlistButton);
