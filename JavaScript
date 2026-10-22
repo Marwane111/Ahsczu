@@ -977,3 +977,172 @@ const TITANSettings = (() => {
 document.addEventListener("DOMContentLoaded", () => {
   TITANSettings.init();
 });
+"use strict";
+
+import { initializeApp } from
+  "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signOut,
+  onAuthStateChanged,
+  updateProfile
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+// Replace these placeholders with your Firebase project settings.
+const firebaseConfig = {
+  apiKey: "YOUR_FIREBASE_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  appId: "YOUR_FIREBASE_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+const form = document.querySelector("#titan-account-form");
+const message = document.querySelector("#titan-account-message");
+const nameInput = document.querySelector("#titan-account-name");
+const emailInput = document.querySelector("#titan-account-email");
+const passwordInput = document.querySelector("#titan-account-password");
+const modeSelect = document.querySelector("#titan-account-mode");
+const submitButton = document.querySelector("#titan-account-submit");
+const resetButton = document.querySelector("#titan-password-reset");
+const logoutButton = document.querySelector("#titan-logout");
+const accountPanel = document.querySelector("#titan-account-panel");
+const signedInPanel = document.querySelector("#titan-signed-in");
+const userName = document.querySelector("#titan-user-name");
+const userEmail = document.querySelector("#titan-user-email");
+
+function showMessage(text, isError = false) {
+  message.textContent = text;
+  message.dataset.state = isError ? "error" : "success";
+}
+
+function setBusy(busy) {
+  submitButton.disabled = busy;
+  submitButton.textContent = busy ? "Please wait..." : "Continue";
+}
+
+function getFriendlyError(error) {
+  const errors = {
+    "auth/email-already-in-use":
+      "This email is already registered. Try signing in.",
+    "auth/invalid-email":
+      "Please enter a valid email address.",
+    "auth/weak-password":
+      "Choose a stronger password with at least 6 characters.",
+    "auth/invalid-credential":
+      "Email or password is incorrect.",
+    "auth/user-not-found":
+      "No account was found for this email.",
+    "auth/wrong-password":
+      "Email or password is incorrect.",
+    "auth/too-many-requests":
+      "Too many attempts. Please try again later.",
+    "auth/network-request-failed":
+      "Network error. Check your internet connection."
+  };
+
+  return errors[error.code] || "Something went wrong. Please try again.";
+}
+
+modeSelect.addEventListener("change", () => {
+  const creatingAccount = modeSelect.value === "register";
+
+  nameInput.hidden = !creatingAccount;
+  nameInput.required = creatingAccount;
+
+  submitButton.textContent = "Continue";
+  showMessage("");
+});
+
+form.addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  const creatingAccount = modeSelect.value === "register";
+
+  setBusy(true);
+  showMessage("");
+
+  try {
+    if (creatingAccount) {
+      const displayName = nameInput.value.trim();
+
+      if (!displayName) {
+        showMessage("Please enter your name.", true);
+        return;
+      }
+
+      const result = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      await updateProfile(result.user, {
+        displayName
+      });
+
+      showMessage("Your TITAN account has been created.");
+    } else {
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      showMessage("You are now signed in.");
+    }
+
+    form.reset();
+  } catch (error) {
+    console.error("TITAN authentication error:", error);
+    showMessage(getFriendlyError(error), true);
+  } finally {
+    setBusy(false);
+  }
+});
+
+resetButton.addEventListener("click", async () => {
+  const email = emailInput.value.trim();
+
+  if (!email) {
+    showMessage("Enter your email address first.", true);
+    emailInput.focus();
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showMessage("If the account exists, a reset email has been sent.");
+  } catch (error) {
+    showMessage(getFriendlyError(error), true);
+  }
+});
+
+logoutButton.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+    showMessage("You have signed out.");
+  } catch (error) {
+    showMessage(getFriendlyError(error), true);
+  }
+});
+
+onAuthStateChanged(auth, user => {
+  const signedIn = Boolean(user);
+
+  accountPanel.hidden = signedIn;
+  signedInPanel.hidden = !signedIn;
+
+  if (user) {
+    userName.textContent = user.displayName || "TITAN Member";
+    userEmail.textContent = user.email || "";
+  }
+});
