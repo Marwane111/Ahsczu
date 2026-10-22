@@ -2189,3 +2189,205 @@ const TITANMovieDetails = (() => {
 document.addEventListener("DOMContentLoaded", () => {
   TITANMovieDetails.init();
 });
+
+"use strict";
+
+const TITANFilters = (() => {
+  const API_BASE = "https://api.themoviedb.org/3";
+  const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
+  const API_TOKEN = "YOUR_TMDB_READ_ACCESS_TOKEN";
+
+  const form = document.querySelector("#titan-filter-form");
+  const results = document.querySelector("#titan-filter-results");
+  const status = document.querySelector("#titan-filter-status");
+  const submitButton = document.querySelector("#titan-filter-submit");
+
+  let currentPage = 1;
+  let totalPages = 1;
+  let lastFilters = null;
+
+  async function request(path, params = {}) {
+    if (!API_TOKEN || API_TOKEN === "YOUR_TMDB_READ_ACCESS_TOKEN") {
+      throw new Error("Add your TMDB Read Access Token first.");
+    }
+
+    const url = new URL(API_BASE + path);
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== "" && value !== null && value !== undefined) {
+        url.searchParams.set(key, value);
+      }
+    });
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${API_TOKEN}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`TMDB request failed: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  function makeCard(item, type) {
+    if (!item.poster_path) return null;
+
+    const title = item.title || item.name || "Untitled";
+    const date = item.release_date || item.first_air_date || "";
+
+    const card = document.createElement("article");
+    card.className = "poster-card";
+    card.dataset.tmdbId = String(item.id);
+    card.dataset.tmdbType = type;
+    card.dataset.tmdbTitle = title;
+    card.tabIndex = 0;
+
+    const image = document.createElement("img");
+    image.className = "poster-card__image";
+    image.src = IMAGE_BASE + item.poster_path;
+    image.alt = title;
+    image.loading = "lazy";
+
+    const details = document.createElement("div");
+    details.className = "poster-card__details";
+
+    const heading = document.createElement("h3");
+    heading.dataset.tmdbTitle = "";
+    heading.textContent = title;
+
+    const metadata = document.createElement("p");
+    metadata.className = "filter-card__metadata";
+    metadata.textContent =
+      `${date ? date.slice(0, 4) : "Year unknown"} · ` +
+      `★ ${Number(item.vote_average || 0).toFixed(1)}`;
+
+    details.append(heading, metadata);
+    card.append(image, details);
+
+    return card;
+  }
+
+  function getFilters() {
+    const type = form.elements.type.value;
+    const genre = form.elements.genre.value;
+    const year = form.elements.year.value.trim();
+    const minimumRating = form.elements.rating.value;
+    const sort = form.elements.sort.value;
+
+    if (year && !/^\d{4}$/.test(year)) {
+      throw new Error("Enter a valid four-digit year.");
+    }
+
+    const currentYear = new Date().getFullYear();
+
+    if (year && (Number(year) < 1870 || Number(year) > currentYear + 10)) {
+      throw new Error("The year is outside the supported range.");
+    }
+
+    const filters = {
+      type,
+      genre,
+      year,
+      minimumRating,
+      sort
+    };
+
+    return filters;
+  }
+
+  async function search(filters, page = 1) {
+    const type = filters.type;
+    const params = {
+      language: "en-US",
+      page,
+      sort_by: filters.sort,
+      include_adult: "false",
+      include_video: "false",
+      "vote_average.gte": filters.minimumRating,
+      "vote_count.gte": 10
+    };
+
+    if (filters.genre) params.with_genres = filters.genre;
+
+    if (filters.year) {
+      params[type === "movie" ? "primary_release_year" : "first_air_date_year"] =
+        filters.year;
+    }
+
+    const data = await request(`/discover/${type}`, params);
+
+    totalPages = Math.min(data.total_pages || 1, 500);
+    currentPage = page;
+
+    return data.results || [];
+  }
+
+  async function runSearch(page = 1) {
+    submitButton.disabled = true;
+    status.textContent = "Finding titles...";
+    results.replaceChildren();
+
+    try {
+      const filters = page === 1 || !lastFilters
+        ? getFilters()
+        : lastFilters;
+
+      lastFilters = filters;
+
+      const items = await search(filters, page);
+      const fragment = document.createDocumentFragment();
+
+      items.forEach(item => {
+        const card = makeCard(item, filters.type);
+        if (card) fragment.appendChild(card);
+      });
+
+      results.replaceChildren(fragment);
+
+      status.textContent = items.length
+        ? `Page ${currentPage} of ${totalPages}`
+        : "No titles matched these filters.";
+
+      document.querySelector("#titan-filter-prev").disabled =
+        currentPage <= 1;
+
+      document.querySelector("#titan-filter-next").disabled =
+        currentPage >= totalPages;
+    } catch (error) {
+      console.error("TITAN filters error:", error);
+      status.textContent = error.message ||
+        "Unable to load results. Please try again.";
+    } finally {
+      submitButton.disabled = false;
+    }
+  }
+
+  function init() {
+    if (!form || !results || !status || !submitButton) return;
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      runSearch(1);
+    });
+
+    document.querySelector("#titan-filter-prev")
+      ?.addEventListener("click", () => {
+        if (currentPage > 1) runSearch(currentPage - 1);
+      });
+
+    document.querySelector("#titan-filter-next")
+      ?.addEventListener("click", () => {
+        if (currentPage < totalPages) runSearch(currentPage + 1);
+      });
+  }
+
+  return { init, runSearch };
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+  TITANFilters.init();
+});
