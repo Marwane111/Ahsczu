@@ -1447,3 +1447,292 @@ cloudSaveButton.textContent = "Save to My Account";
 cloudSaveButton.className = "watchlist-toggle";
 
 details.appendChild(cloudSaveButton);
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/watchlist/{itemId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+  }
+}
+"use strict";
+
+import { initializeApp, getApp, getApps } from
+  "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+import {
+  getAuth,
+  onAuthStateChanged
+} from
+  "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  query,
+  orderBy,
+  serverTimestamp
+} from
+  "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+// Use the same configuration as account.js.
+const firebaseConfig = {
+  apiKey: "YOUR_FIREBASE_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  appId: "YOUR_FIREBASE_APP_ID"
+};
+
+const app = getApps().length
+  ? getApp()
+  : initializeApp(firebaseConfig);
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUser = null;
+let activeTitle = null;
+
+const form = document.querySelector("#titan-review-form");
+const ratingInput = document.querySelector("#titan-review-rating");
+const textInput = document.querySelector("#titan-review-text");
+const statusElement = document.querySelector("#titan-review-status");
+const reviewsContainer = document.querySelector("#titan-reviews-list");
+const titleElement = document.querySelector("#titan-review-title");
+const submitButton = document.querySelector("#titan-review-submit");
+
+function showStatus(message, isError = false) {
+  statusElement.textContent = message;
+  statusElement.dataset.state = isError ? "error" : "success";
+}
+
+function reviewCollection(title) {
+  return collection(
+    db,
+    "titles",
+    `${title.type}_${title.id}`,
+    "reviews"
+  );
+}
+
+function validateTitle(title) {
+  return (
+    title &&
+    /^\d+$/.test(String(title.id)) &&
+    ["movie", "tv"].includes(title.type)
+  );
+}
+
+function escapeText(value) {
+  return String(value || "").trim();
+}
+
+async function loadReviews() {
+  if (!activeTitle || !validateTitle(activeTitle)) return;
+
+  reviewsContainer.replaceChildren();
+
+  try {
+    const reviewsQuery = query(
+      reviewCollection(activeTitle),
+      orderBy("createdAt", "desc")
+    );
+
+    const snapshot = await getDocs(reviewsQuery);
+
+    if (snapshot.empty) {
+      const empty = document.createElement("p");
+      empty.textContent = "No reviews yet. Be the first to review.";
+      reviewsContainer.appendChild(empty);
+      return;
+    }
+
+    snapshot.forEach(reviewDoc => {
+      const review = reviewDoc.data();
+
+      const article = document.createElement("article");
+      article.className = "titan-review-card";
+
+      const heading = document.createElement("h3");
+      heading.textContent = review.displayName || "TITAN Member";
+
+      const rating = document.createElement("p");
+      rating.className = "titan-review-card__rating";
+      rating.textContent = `Rating: ${review.rating}/10`;
+
+      const body = document.createElement("p");
+      body.textContent = review.text || "";
+
+      article.append(heading, rating, body);
+      reviewsContainer.appendChild(article);
+    });
+  } catch (error) {
+    console.error("Unable to load reviews:", error);
+    showStatus("Unable to load reviews. Please try again.", true);
+  }
+}
+
+async function loadMyReview() {
+  if (!currentUser || !activeTitle) return;
+
+  const reviewRef = doc(
+    reviewCollection(activeTitle),
+    currentUser.uid
+  );
+
+  const snapshot = await getDoc(reviewRef);
+
+  if (snapshot.exists()) {
+    const review = snapshot.data();
+
+    ratingInput.value = String(review.rating || 8);
+    textInput.value = review.text || "";
+    submitButton.textContent = "Update Review";
+  } else {
+    ratingInput.value = "8";
+    textInput.value = "";
+    submitButton.textContent = "Submit Review";
+  }
+}
+
+async function submitReview(event) {
+  event.preventDefault();
+
+  if (!currentUser) {
+    showStatus("Please sign in to write a review.", true);
+    return;
+  }
+
+  if (!validateTitle(activeTitle)) {
+    showStatus("Select a valid movie or series first.", true);
+    return;
+  }
+
+  const rating = Number(ratingInput.value);
+  const text = escapeText(textInput.value);
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
+    showStatus("Choose a rating between 1 and 10.", true);
+    return;
+  }
+
+  if (text.length < 5 || text.length > 1000) {
+    showStatus("Your review must contain 5 to 1000 characters.", true);
+    return;
+  }
+
+  submitButton.disabled = true;
+
+  try {
+    const reviewRef = doc(
+      reviewCollection(activeTitle),
+      currentUser.uid
+    );
+
+    const existingReview = await getDoc(reviewRef);
+
+    await setDoc(reviewRef, {
+      userId: currentUser.uid,
+      displayName: currentUser.displayName || "TITAN Member",
+      rating,
+      text,
+      updatedAt: serverTimestamp(),
+      ...(existingReview.exists()
+        ? {}
+        : { createdAt: serverTimestamp() })
+    });
+
+    showStatus("Your review has been saved.");
+    await loadReviews();
+  } catch (error) {
+    console.error("Unable to save review:", error);
+    showStatus("Could not save your review. Please try again.", true);
+  } finally {
+    submitButton.disabled = false;
+  }
+}
+
+function selectTitle(title) {
+  if (!validateTitle(title)) {
+    showStatus("Invalid movie or series.", true);
+    return;
+  }
+
+  activeTitle = {
+    id: String(title.id),
+    type: title.type,
+    name: title.name || "Selected title"
+  };
+
+  titleElement.textContent = activeTitle.name;
+  showStatus("");
+
+  if (currentUser) {
+    loadMyReview().catch(error => {
+      console.error("Unable to load your review:", error);
+    });
+  }
+
+  loadReviews();
+}
+
+function init() {
+  if (!form || !reviewsContainer) {
+    console.warn("TITAN review elements were not found.");
+    return;
+  }
+
+  form.addEventListener("submit", submitReview);
+
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
+
+    if (!user) {
+      showStatus("Sign in to submit or edit a review.", true);
+      submitButton.disabled = true;
+      return;
+    }
+
+    submitButton.disabled = false;
+
+    if (activeTitle) {
+      loadMyReview().catch(console.error);
+    }
+  });
+
+  // Select a movie by clicking a poster.
+  document.addEventListener("click", event => {
+    const card = event.target.closest(
+      ".poster-card[data-tmdb-id][data-tmdb-type]"
+    );
+
+    if (!card) return;
+
+    if (event.target.closest("button, a")) return;
+
+    const name =
+      card.dataset.tmdbTitle ||
+      card.querySelector("[data-tmdb-title]")?.textContent ||
+      "Selected title";
+
+    selectTitle({
+      id: card.dataset.tmdbId,
+      type: card.dataset.tmdbType,
+      name
+    });
+  });
+}
+
+window.TITANReviews = {
+  selectTitle,
+  loadReviews
+};
+
+document.addEventListener("DOMContentLoaded", init);
