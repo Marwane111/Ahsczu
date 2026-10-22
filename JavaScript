@@ -813,3 +813,167 @@ watchlistButton.textContent = "Add to Watchlist";
 watchlistButton.className = "watchlist-toggle";
 
 details.appendChild(watchlistButton);
+"use strict";
+
+const TITANSettings = (() => {
+  const STORAGE_KEY = "titan-settings-v1";
+
+  const defaults = {
+    language: "en",
+    theme: "dark",
+    imageQuality: "high",
+    animations: true,
+    autoplayTrailers: false
+  };
+
+  let settings = loadSettings();
+
+  function loadSettings() {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem(STORAGE_KEY) || "{}"
+      );
+
+      return {
+        ...defaults,
+        ...saved
+      };
+    } catch {
+      return { ...defaults };
+    }
+  }
+
+  function saveSettings() {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(settings)
+      );
+
+      return true;
+    } catch (error) {
+      console.error("Unable to save settings:", error);
+      return false;
+    }
+  }
+
+  function applySettings() {
+    const root = document.documentElement;
+
+    root.dataset.theme = settings.theme;
+    root.dataset.animations = String(settings.animations);
+    root.dataset.imageQuality = settings.imageQuality;
+    root.lang = settings.language;
+
+    document
+      .querySelectorAll("[data-setting]")
+      .forEach(control => {
+        const key = control.dataset.setting;
+
+        if (!(key in settings)) return;
+
+        if (control.type === "checkbox") {
+          control.checked = Boolean(settings[key]);
+        } else {
+          control.value = String(settings[key]);
+        }
+      });
+
+    document.dispatchEvent(
+      new CustomEvent("titan:settings-changed", {
+        detail: { ...settings }
+      })
+    );
+  }
+
+  function update(key, value) {
+    if (!(key in defaults)) return false;
+
+    const allowedValues = {
+      language: ["en", "fr", "ar"],
+      theme: ["dark", "light"],
+      imageQuality: ["standard", "high"]
+    };
+
+    if (
+      allowedValues[key] &&
+      !allowedValues[key].includes(value)
+    ) {
+      return false;
+    }
+
+    if (typeof defaults[key] === "boolean" &&
+        typeof value !== "boolean") {
+      return false;
+    }
+
+    const previous = settings[key];
+    settings[key] = value;
+
+    if (!saveSettings()) {
+      settings[key] = previous;
+      return false;
+    }
+
+    applySettings();
+    return true;
+  }
+
+  function reset() {
+    settings = { ...defaults };
+
+    if (!saveSettings()) return false;
+
+    applySettings();
+    return true;
+  }
+
+  function getAll() {
+    return { ...settings };
+  }
+
+  function init() {
+    applySettings();
+
+    document
+      .querySelectorAll("[data-setting]")
+      .forEach(control => {
+        const key = control.dataset.setting;
+
+        const eventName =
+          control.type === "checkbox" ||
+          control.tagName === "SELECT"
+            ? "change"
+            : "input";
+
+        control.addEventListener(eventName, () => {
+          const value =
+            control.type === "checkbox"
+              ? control.checked
+              : control.value;
+
+          update(key, value);
+        });
+      });
+
+    const resetButton = document.querySelector(
+      "#titan-reset-settings"
+    );
+
+    if (resetButton) {
+      resetButton.addEventListener("click", reset);
+    }
+  }
+
+  return {
+    init,
+    update,
+    reset,
+    getAll,
+    applySettings
+  };
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+  TITANSettings.init();
+});
