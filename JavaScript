@@ -1439,3 +1439,11 @@ const TITANCloudWatchlist = {
 window.TITANCloudWatchlist = TITANCloudWatchlist;
 
 document.addEventListener("DOMContentLoaded", init);
+const cloudSaveButton = document.createElement("button");
+
+cloudSaveButton.type = "button";
+cloudSaveButton.dataset.cloudSave = "";
+cloudSaveButton.textContent = "Save to My Account";
+cloudSaveButton.className = "watchlist-toggle";
+
+details.appendChild(cloudSaveButton);
