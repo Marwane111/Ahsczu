@@ -462,3 +462,101 @@ html[data-animations="false"] *::after {
 #titan-account-message[data-state="success"] {
   color: #d4af37;
 }
+.titan-reviews {
+  max-width: 850px;
+  margin: 48px auto;
+  padding: 28px;
+  color: #f5f5f5;
+  background: #111;
+  border: 1px solid #2c2c2c;
+  border-radius: 14px;
+}
+
+.titan-reviews__eyebrow {
+  color: #d4af37;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.titan-reviews h2 {
+  font-size: 28px;
+}
+
+.titan-reviews form {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.titan-reviews label {
+  color: #ddd;
+  font-size: 13px;
+}
+
+.titan-reviews select,
+.titan-reviews textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  color: #fff;
+  background: #1b1b1b;
+  border: 1px solid #444;
+  border-radius: 7px;
+  font: inherit;
+}
+
+.titan-reviews textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.titan-reviews button {
+  padding: 12px 18px;
+  color: #111;
+  background: #d4af37;
+  border: 0;
+  border-radius: 7px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.titan-reviews button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.titan-reviews__list {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.titan-review-card {
+  padding: 18px;
+  background: #191919;
+  border: 1px solid #303030;
+  border-radius: 9px;
+}
+
+.titan-review-card h3 {
+  margin-top: 0;
+}
+
+.titan-review-card__rating {
+  color: #d4af37;
+  font-weight: 700;
+}
+
+.titan-review-card p {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+#titan-review-status[data-state="error"] {
+  color: #ff7777;
+}
+
+#titan-review-status[data-state="success"] {
+  color: #d4af37;
+  }
