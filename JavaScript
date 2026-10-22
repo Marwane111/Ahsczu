@@ -2391,3 +2391,226 @@ const TITANFilters = (() => {
 document.addEventListener("DOMContentLoaded", () => {
   TITANFilters.init();
 });
+
+"use strict";
+
+const TITANFinal = (() => {
+  const STORAGE_KEY = "titan-final-preferences-v1";
+
+  const defaults = {
+    theme: "dark",
+    language: "en"
+  };
+
+  let preferences = { ...defaults };
+
+  const translations = {
+    en: {
+      home: "Home",
+      discover: "Discover",
+      filters: "Explore",
+      watchlist: "My Watchlist",
+      settings: "Settings",
+      about: "About TITAN",
+      tagline: "Your next great watch.",
+      theme: "Appearance",
+      language: "Language",
+      dark: "Dark",
+      light: "Light",
+      save: "Save Preferences",
+      saved: "Preferences saved.",
+      footer: "Discover your next great watch."
+    },
+    fr: {
+      home: "Accueil",
+      discover: "Découvrir",
+      filters: "Explorer",
+      watchlist: "Ma liste",
+      settings: "Paramètres",
+      about: "À propos de TITAN",
+      tagline: "Votre prochain film préféré.",
+      theme: "Apparence",
+      language: "Langue",
+      dark: "Sombre",
+      light: "Clair",
+      save: "Enregistrer",
+      saved: "Préférences enregistrées.",
+      footer: "Découvrez votre prochain film préféré."
+    },
+    ar: {
+      home: "الرئيسية",
+      discover: "اكتشف",
+      filters: "استكشف",
+      watchlist: "قائمتي",
+      settings: "الإعدادات",
+      about: "حول TITAN",
+      tagline: "اكتشف ما يستحق المشاهدة.",
+      theme: "المظهر",
+      language: "اللغة",
+      dark: "داكن",
+      light: "فاتح",
+      save: "حفظ الإعدادات",
+      saved: "تم حفظ الإعدادات.",
+      footer: "اكتشف ما يستحق المشاهدة."
+    }
+  };
+
+  function loadPreferences() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+
+      if (stored) {
+        const parsed = JSON.parse(stored);
+
+        preferences.theme =
+          ["dark", "light"].includes(parsed.theme)
+            ? parsed.theme
+            : defaults.theme;
+
+        preferences.language =
+          ["en", "fr", "ar"].includes(parsed.language)
+            ? parsed.language
+            : defaults.language;
+      }
+    } catch (error) {
+      console.warn("Could not load TITAN preferences.", error);
+    }
+  }
+
+  function applyTheme() {
+    document.documentElement.dataset.theme = preferences.theme;
+    document.documentElement.style.colorScheme = preferences.theme;
+
+    const themeSelect = document.querySelector("#titan-final-theme");
+
+    if (themeSelect) {
+      themeSelect.value = preferences.theme;
+    }
+  }
+
+  function applyLanguage() {
+    const language = preferences.language;
+    const dictionary = translations[language];
+
+    document.documentElement.lang = language;
+    document.documentElement.dir =
+      language === "ar" ? "rtl" : "ltr";
+
+    document.querySelectorAll("[data-titan-i18n]").forEach(element => {
+      const key = element.dataset.titanI18n;
+
+      if (dictionary[key]) {
+        element.textContent = dictionary[key];
+      }
+    });
+
+    const languageSelect =
+      document.querySelector("#titan-final-language");
+
+    if (languageSelect) {
+      languageSelect.value = language;
+    }
+  }
+
+  function savePreferences() {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(preferences)
+      );
+
+      showStatus(translations[preferences.language].saved);
+    } catch (error) {
+      console.error("Could not save preferences.", error);
+      showStatus("Unable to save preferences on this device.");
+    }
+  }
+
+  function showStatus(message) {
+    const status = document.querySelector("#titan-final-status");
+
+    if (status) {
+      status.textContent = message;
+    }
+  }
+
+  function setupSettings() {
+    const themeSelect = document.querySelector("#titan-final-theme");
+    const languageSelect =
+      document.querySelector("#titan-final-language");
+    const saveButton = document.querySelector("#titan-final-save");
+
+    themeSelect?.addEventListener("change", () => {
+      preferences.theme = themeSelect.value;
+      applyTheme();
+    });
+
+    languageSelect?.addEventListener("change", () => {
+      preferences.language = languageSelect.value;
+      applyLanguage();
+    });
+
+    saveButton?.addEventListener("click", savePreferences);
+  }
+
+  function setupMobileMenu() {
+    const toggle = document.querySelector("#titan-menu-toggle");
+    const navigation = document.querySelector("#titan-navigation");
+
+    if (!toggle || !navigation) return;
+
+    toggle.addEventListener("click", () => {
+      const isOpen = toggle.getAttribute("aria-expanded") === "true";
+
+      toggle.setAttribute("aria-expanded", String(!isOpen));
+      navigation.classList.toggle("is-open", !isOpen);
+    });
+
+    navigation.querySelectorAll("a").forEach(link => {
+      link.addEventListener("click", () => {
+        navigation.classList.remove("is-open");
+        toggle.setAttribute("aria-expanded", "false");
+      });
+    });
+  }
+
+  function setupBackToTop() {
+    const button = document.querySelector("#titan-back-to-top");
+
+    if (!button) return;
+
+    button.addEventListener("click", () => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    });
+  }
+
+  function setupFooter() {
+    const year = document.querySelector("#titan-footer-year");
+
+    if (year) {
+      year.textContent = String(new Date().getFullYear());
+    }
+  }
+
+  function init() {
+    loadPreferences();
+    applyTheme();
+    applyLanguage();
+    setupSettings();
+    setupMobileMenu();
+    setupBackToTop();
+    setupFooter();
+  }
+
+  return {
+    init,
+    savePreferences,
+    applyTheme,
+    applyLanguage
+  };
+})();
+
+document.addEventListener("DOMContentLoaded", TITANFinal.init);
