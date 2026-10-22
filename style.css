@@ -275,3 +275,114 @@ body.titan-modal-open {
   border-color: #444;
   color: #ccc;
 }
+.titan-settings {
+  max-width: 760px;
+  margin: 40px auto;
+  padding: 28px;
+  color: #f5f5f5;
+  background: #111;
+  border: 1px solid #292929;
+  border-radius: 14px;
+}
+
+.titan-settings__header {
+  margin-bottom: 28px;
+}
+
+.titan-settings__eyebrow {
+  color: #d4af37;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.titan-settings__header h2 {
+  margin: 8px 0;
+  font-size: 30px;
+}
+
+.titan-settings__header > p:last-child {
+  color: #999;
+}
+
+.titan-settings__group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid #292929;
+}
+
+.titan-settings__group label {
+  font-size: 14px;
+}
+
+.titan-settings__group select {
+  width: min(190px, 50%);
+  padding: 10px;
+  color: #f5f5f5;
+  background: #1c1c1c;
+  border: 1px solid #444;
+  border-radius: 7px;
+}
+
+.titan-settings__toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: #d4af37;
+  cursor: pointer;
+}
+
+.titan-settings__reset {
+  margin-top: 24px;
+  padding: 12px 18px;
+  color: #d4af37;
+  background: transparent;
+  border: 1px solid #d4af37;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.titan-settings__reset:hover {
+  color: #111;
+  background: #d4af37;
+}
+
+html[data-theme="light"] body {
+  color: #171717;
+  background: #f4f4f4;
+}
+
+html[data-theme="light"] .titan-settings {
+  color: #171717;
+  background: #fff;
+  border-color: #ddd;
+}
+
+html[data-theme="light"] .titan-settings__group {
+  border-color: #ddd;
+}
+
+html[data-theme="light"] .titan-settings__group select {
+  color: #171717;
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+html[data-animations="false"] *,
+html[data-animations="false"] *::before,
+html[data-animations="false"] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (max-width: 480px) {
+  .titan-settings {
+    padding: 18px;
+  }
+
+  .titan-settings__group {
+    align-items: flex-start;
+  }
+}
