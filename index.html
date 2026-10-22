@@ -1480,3 +1480,45 @@ const TITAN_APP = (() => {
   ></div>
 </section>
 <script type="module" src="cloud-watchlist.js"></script>
+<section class="titan-reviews" id="reviews">
+  <p class="titan-reviews__eyebrow">COMMUNITY REVIEWS</p>
+  <h2>Reviews & Ratings</h2>
+
+  <p>Selected title: <strong id="titan-review-title">None selected</strong></p>
+
+  <form id="titan-review-form">
+    <label for="titan-review-rating">Your rating</label>
+
+    <select id="titan-review-rating" required>
+      <option value="10">10 — Outstanding</option>
+      <option value="9">9 — Excellent</option>
+      <option value="8" selected>8 — Very good</option>
+      <option value="7">7 — Good</option>
+      <option value="6">6 — Above average</option>
+      <option value="5">5 — Average</option>
+      <option value="4">4 — Below average</option>
+      <option value="3">3 — Poor</option>
+      <option value="2">2 — Very poor</option>
+      <option value="1">1 — Terrible</option>
+    </select>
+
+    <label for="titan-review-text">Your review</label>
+
+    <textarea
+      id="titan-review-text"
+      rows="5"
+      minlength="5"
+      maxlength="1000"
+      placeholder="What did you think about this title?"
+      required
+    ></textarea>
+
+    <button id="titan-review-submit" type="submit" disabled>
+      Submit Review
+    </button>
+  </form>
+
+  <p id="titan-review-status" role="status" aria-live="polite"></p>
+
+  <div id="titan-reviews-list" class="titan-reviews__list"></div>
+</section>
