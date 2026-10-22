@@ -1606,3 +1606,94 @@ const TITAN_APP = (() => {
   </div>
 </div>
 <script src="movie-details.js" defer></script>
+
+<section class="titan-filter-section" id="discover-filters">
+  <div class="titan-filter-heading">
+    <p class="titan-filter-eyebrow">FIND YOUR NEXT WATCH</p>
+    <h2>Explore by Preference</h2>
+    <p>Choose your preferences to find movies and series.</p>
+  </div>
+
+  <form id="titan-filter-form" class="titan-filter-form">
+    <div class="titan-filter-field">
+      <label for="titan-filter-type">Content type</label>
+      <select id="titan-filter-type" name="type">
+        <option value="movie">Movies</option>
+        <option value="tv">TV Series</option>
+      </select>
+    </div>
+
+    <div class="titan-filter-field">
+      <label for="titan-filter-genre">Genre</label>
+      <select id="titan-filter-genre" name="genre">
+        <option value="">All genres</option>
+        <option value="28">Action</option>
+        <option value="12">Adventure</option>
+        <option value="16">Animation</option>
+        <option value="35">Comedy</option>
+        <option value="80">Crime</option>
+        <option value="99">Documentary</option>
+        <option value="18">Drama</option>
+        <option value="14">Fantasy</option>
+        <option value="27">Horror</option>
+        <option value="9648">Mystery</option>
+        <option value="10749">Romance</option>
+        <option value="878">Science Fiction</option>
+        <option value="53">Thriller</option>
+      </select>
+    </div>
+
+    <div class="titan-filter-field">
+      <label for="titan-filter-year">Release year</label>
+      <input
+        id="titan-filter-year"
+        name="year"
+        type="number"
+        min="1870"
+        max="2036"
+        placeholder="Any year"
+      />
+    </div>
+
+    <div class="titan-filter-field">
+      <label for="titan-filter-rating">Minimum rating</label>
+      <select id="titan-filter-rating" name="rating">
+        <option value="0">Any rating</option>
+        <option value="5">5+</option>
+        <option value="6">6+</option>
+        <option value="7">7+</option>
+        <option value="8">8+</option>
+        <option value="9">9+</option>
+      </select>
+    </div>
+
+    <div class="titan-filter-field">
+      <label for="titan-filter-sort">Sort by</label>
+      <select id="titan-filter-sort" name="sort">
+        <option value="popularity.desc">Most Popular</option>
+        <option value="vote_average.desc">Highest Rated</option>
+        <option value="primary_release_date.desc">Newest First</option>
+        <option value="primary_release_date.asc">Oldest First</option>
+      </select>
+    </div>
+
+    <button id="titan-filter-submit" type="submit">
+      Find Titles
+    </button>
+  </form>
+
+  <p id="titan-filter-status" role="status" aria-live="polite">
+    Choose your preferences and find titles.
+  </p>
+
+  <div id="titan-filter-results" class="titan-filter-results"></div>
+
+  <div class="titan-filter-pagination">
+    <button id="titan-filter-prev" type="button" disabled>
+      Previous
+    </button>
+    <button id="titan-filter-next" type="button" disabled>
+      Next
+    </button>
+  </div>
+</section>
