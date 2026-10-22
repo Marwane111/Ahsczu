@@ -1146,3 +1146,296 @@ onAuthStateChanged(auth, user => {
     userEmail.textContent = user.email || "";
   }
 });
+"use strict";
+
+import { initializeApp, getApp, getApps } from
+  "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+import {
+  getAuth,
+  onAuthStateChanged
+} from
+  "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  serverTimestamp
+} from
+  "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+// Use the same Firebase project settings as account.js.
+const firebaseConfig = {
+  apiKey: "YOUR_FIREBASE_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  appId: "YOUR_FIREBASE_APP_ID"
+};
+
+const app = getApps().length
+  ? getApp()
+  : initializeApp(firebaseConfig);
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const state = {
+  user: null,
+  busy: false
+};
+
+function getCollection(userId) {
+  return collection(db, "users", userId, "watchlist");
+}
+
+function showStatus(message, isError = false) {
+  const element = document.querySelector("#cloud-watchlist-status");
+
+  if (!element) return;
+
+  element.textContent = message;
+  element.dataset.state = isError ? "error" : "success";
+}
+
+function validateItem(item) {
+  return (
+    item &&
+    /^\d+$/.test(String(item.id)) &&
+    ["movie", "tv"].includes(item.type)
+  );
+}
+
+async function loadCloudWatchlist() {
+  if (!state.user) return [];
+
+  const snapshot = await getDocs(getCollection(state.user.uid));
+
+  return snapshot.docs.map(snapshotDoc => ({
+    id: snapshotDoc.id,
+    ...snapshotDoc.data()
+  }));
+}
+
+async function saveItem(item) {
+  if (!state.user) {
+    showStatus("Sign in to sync your watchlist.", true);
+    return false;
+  }
+
+  if (!validateItem(item)) {
+    showStatus("Invalid movie or series information.", true);
+    return false;
+  }
+
+  try {
+    const itemRef = doc(
+      db,
+      "users",
+      state.user.uid,
+      "watchlist",
+      `${item.type}_${item.id}`
+    );
+
+    await setDoc(itemRef, {
+      id: String(item.id),
+      type: item.type,
+      title: String(item.title || "Untitled"),
+      rating: String(item.rating || ""),
+      poster: String(item.poster || ""),
+      updatedAt: serverTimestamp()
+    });
+
+    showStatus("Saved to your cloud watchlist.");
+    return true;
+  } catch (error) {
+    console.error("Cloud watchlist save failed:", error);
+    showStatus("Could not save. Check your connection.", true);
+    return false;
+  }
+}
+
+async function removeItem(id, type) {
+  if (!state.user) {
+    showStatus("Sign in to manage your cloud watchlist.", true);
+    return false;
+  }
+
+  if (!/^\d+$/.test(String(id)) ||
+      !["movie", "tv"].includes(type)) {
+    return false;
+  }
+
+  try {
+    await deleteDoc(
+      doc(
+        db,
+        "users",
+        state.user.uid,
+        "watchlist",
+        `${type}_${id}`
+      )
+    );
+
+    showStatus("Removed from your cloud watchlist.");
+    return true;
+  } catch (error) {
+    console.error("Cloud watchlist removal failed:", error);
+    showStatus("Could not remove this title.", true);
+    return false;
+  }
+}
+
+function renderCloudItems(items) {
+  const container = document.querySelector("#cloud-watchlist-items");
+  const empty = document.querySelector("#cloud-watchlist-empty");
+
+  if (!container) return;
+
+  container.replaceChildren();
+
+  if (empty) {
+    empty.hidden = items.length > 0;
+  }
+
+  items.forEach(item => {
+    const card = document.createElement("article");
+    card.className = "poster-card";
+
+    const title = document.createElement("h3");
+    title.textContent = item.title || "Untitled";
+
+    const type = document.createElement("p");
+    type.textContent = item.type === "tv" ? "TV Series" : "Movie";
+
+    const rating = document.createElement("p");
+    rating.textContent = item.rating
+      ? `Rating: ${item.rating}`
+      : "";
+
+    const image = document.createElement("img");
+    image.loading = "lazy";
+    image.alt = item.title || "Poster";
+    image.src = item.poster || "";
+    image.hidden = !item.poster;
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.textContent = "Remove";
+
+    removeButton.addEventListener("click", async () => {
+      removeButton.disabled = true;
+
+      const removed = await removeItem(item.id, item.type);
+
+      if (removed) {
+        card.remove();
+
+        if (!container.children.length && empty) {
+          empty.hidden = false;
+        }
+      } else {
+        removeButton.disabled = false;
+      }
+    });
+
+    card.append(image, title, type, rating, removeButton);
+    container.appendChild(card);
+  });
+}
+
+async function refresh() {
+  if (!state.user || state.busy) return;
+
+  state.busy = true;
+  showStatus("Loading your saved titles...");
+
+  try {
+    const items = await loadCloudWatchlist();
+    renderCloudItems(items);
+    showStatus(`${items.length} saved titles.`);
+  } catch (error) {
+    console.error("Cloud watchlist load failed:", error);
+    showStatus("Could not load your watchlist.", true);
+  } finally {
+    state.busy = false;
+  }
+}
+
+function getCardItem(card) {
+  const image = card.querySelector("img");
+
+  return {
+    id: card.dataset.tmdbId,
+    type: card.dataset.tmdbType,
+    title:
+      card.dataset.tmdbTitle ||
+      card.querySelector("[data-tmdb-title]")?.textContent ||
+      "Untitled",
+    rating:
+      card.dataset.tmdbRating ||
+      card.querySelector("[data-tmdb-rating]")?.textContent ||
+      "",
+    poster: image?.currentSrc || image?.src || ""
+  };
+}
+
+function init() {
+  onAuthStateChanged(auth, async user => {
+    state.user = user;
+
+    const signInMessage = document.querySelector(
+      "#cloud-watchlist-signin"
+    );
+
+    if (signInMessage) {
+      signInMessage.hidden = Boolean(user);
+    }
+
+    if (user) {
+      await refresh();
+    } else {
+      renderCloudItems([]);
+      showStatus("Sign in to access your cloud watchlist.");
+    }
+  });
+
+  document.addEventListener("click", async event => {
+    const button = event.target.closest("[data-cloud-save]");
+
+    if (!button) return;
+
+    const card = button.closest(
+      ".poster-card[data-tmdb-id][data-tmdb-type]"
+    );
+
+    if (!card) return;
+
+    button.disabled = true;
+
+    try {
+      await saveItem(getCardItem(card));
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  const refreshButton = document.querySelector(
+    "#cloud-watchlist-refresh"
+  );
+
+  refreshButton?.addEventListener("click", refresh);
+}
+
+const TITANCloudWatchlist = {
+  saveItem,
+  removeItem,
+  refresh
+};
+
+window.TITANCloudWatchlist = TITANCloudWatchlist;
+
+document.addEventListener("DOMContentLoaded", init);
