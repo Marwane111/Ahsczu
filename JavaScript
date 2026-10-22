@@ -1736,3 +1736,32 @@ window.TITANReviews = {
 };
 
 document.addEventListener("DOMContentLoaded", init);
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId}/watchlist/{itemId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+
+    match /titles/{titleId}/reviews/{userId} {
+      allow read: if true;
+
+      allow create, update: if request.auth != null
+                            && request.auth.uid == userId
+                            && request.resource.data.userId == userId
+                            && request.resource.data.rating is int
+                            && request.resource.data.rating >= 1
+                            && request.resource.data.rating <= 10
+                            && request.resource.data.text is string
+                            && request.resource.data.text.size() >= 5
+                            && request.resource.data.text.size() <= 1000;
+
+      allow delete: if request.auth != null
+                    && request.auth.uid == userId;
+    }
+  }
+}
