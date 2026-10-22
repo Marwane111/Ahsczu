@@ -1582,3 +1582,26 @@ const TITAN_APP = (() => {
 
 </main>
 <script src="discover.js" defer></script>
+
+<div
+  id="titan-details-modal"
+  class="titan-details-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-hidden="true"
+  aria-label="Movie and series details"
+  hidden
+>
+  <div class="titan-details-modal__panel">
+    <button
+      id="titan-details-close"
+      class="titan-details-modal__close"
+      type="button"
+      aria-label="Close details"
+    >
+      &times;
+    </button>
+
+    <div id="titan-details-content"></div>
+  </div>
+</div>
