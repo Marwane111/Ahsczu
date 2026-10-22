@@ -1,4 +1,3 @@
-
 <script>
 /* =========================================================
    TITAN — PART 4 OF 14
@@ -1395,3 +1394,63 @@ const TITAN_APP = (() => {
   </button>
 </section>
 <script src="settings.js" defer></script>
+<section class="titan-account" id="account">
+  <div id="titan-account-panel">
+    <p class="titan-account__eyebrow">YOUR TITAN EXPERIENCE</p>
+    <h2>Welcome to TITAN</h2>
+    <p>Create an account or sign in to continue.</p>
+
+    <form id="titan-account-form">
+      <label for="titan-account-mode">Account type</label>
+      <select id="titan-account-mode">
+        <option value="login">Sign in</option>
+        <option value="register">Create account</option>
+      </select>
+
+      <label for="titan-account-name" hidden>Name</label>
+      <input
+        id="titan-account-name"
+        type="text"
+        placeholder="Your name"
+        autocomplete="name"
+        hidden
+      >
+
+      <label for="titan-account-email">Email</label>
+      <input
+        id="titan-account-email"
+        type="email"
+        placeholder="Email address"
+        autocomplete="email"
+        required
+      >
+
+      <label for="titan-account-password">Password</label>
+      <input
+        id="titan-account-password"
+        type="password"
+        placeholder="Password"
+        autocomplete="current-password"
+        minlength="6"
+        required
+      >
+
+      <button id="titan-account-submit" type="submit">
+        Continue
+      </button>
+    </form>
+
+    <button id="titan-password-reset" type="button">
+      Forgot password?
+    </button>
+
+    <p id="titan-account-message" role="status" aria-live="polite"></p>
+  </div>
+
+  <div id="titan-signed-in" hidden>
+    <p class="titan-account__eyebrow">YOUR ACCOUNT</p>
+    <h2>Welcome, <span id="titan-user-name"></span></h2>
+    <p id="titan-user-email"></p>
+    <button id="titan-logout" type="button">Sign out</button>
+  </div>
+</section>
