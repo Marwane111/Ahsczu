@@ -1333,3 +1333,64 @@ const TITAN_APP = (() => {
   ></div>
 </section>
 <script src="watchlist.js" defer></script>
+<section class="titan-settings" id="settings">
+  <header class="titan-settings__header">
+    <p class="titan-settings__eyebrow">PERSONALIZATION</p>
+    <h2>Settings</h2>
+    <p>Customize your TITAN experience.</p>
+  </header>
+
+  <div class="titan-settings__group">
+    <label for="titan-language">Language</label>
+    <select id="titan-language" data-setting="language">
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+      <option value="ar">العربية</option>
+    </select>
+  </div>
+
+  <div class="titan-settings__group">
+    <label for="titan-theme">Appearance</label>
+    <select id="titan-theme" data-setting="theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+    </select>
+  </div>
+
+  <div class="titan-settings__group">
+    <label for="titan-image-quality">Image quality</label>
+    <select
+      id="titan-image-quality"
+      data-setting="imageQuality"
+    >
+      <option value="standard">Standard</option>
+      <option value="high">High</option>
+    </select>
+  </div>
+
+  <div class="titan-settings__group titan-settings__toggle">
+    <label for="titan-animations">Enable animations</label>
+    <input
+      id="titan-animations"
+      type="checkbox"
+      data-setting="animations"
+    >
+  </div>
+
+  <div class="titan-settings__group titan-settings__toggle">
+    <label for="titan-autoplay">Autoplay trailers</label>
+    <input
+      id="titan-autoplay"
+      type="checkbox"
+      data-setting="autoplayTrailers"
+    >
+  </div>
+
+  <button
+    id="titan-reset-settings"
+    class="titan-settings__reset"
+    type="button"
+  >
+    Reset settings
+  </button>
+</section>
