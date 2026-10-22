@@ -1523,3 +1523,61 @@ const TITAN_APP = (() => {
   <div id="titan-reviews-list" class="titan-reviews__list"></div>
 </section>
 <script type="module" src="reviews.js"></script>
+
+<main class="titan-discover">
+
+  <section class="discover-hero">
+    <p class="discover-hero__eyebrow">YOUR NEXT GREAT WATCH</p>
+    <h1>Discover TITAN</h1>
+    <p>Explore trending stories, acclaimed films, and new releases.</p>
+  </section>
+
+  <section class="discover-section">
+    <div class="discover-section__header">
+      <h2>Trending This Week</h2>
+      <button data-discover-refresh="titan-trending">
+        Refresh
+      </button>
+    </div>
+    <p data-discover-status="titan-trending"
+       class="discover-status" aria-live="polite"></p>
+    <div id="titan-trending" class="discover-row"></div>
+  </section>
+
+  <section class="discover-section">
+    <div class="discover-section__header">
+      <h2>Top Rated Movies</h2>
+      <button data-discover-refresh="titan-top-rated">
+        Refresh
+      </button>
+    </div>
+    <p data-discover-status="titan-top-rated"
+       class="discover-status" aria-live="polite"></p>
+    <div id="titan-top-rated" class="discover-row"></div>
+  </section>
+
+  <section class="discover-section">
+    <div class="discover-section__header">
+      <h2>Now Playing</h2>
+      <button data-discover-refresh="titan-new-releases">
+        Refresh
+      </button>
+    </div>
+    <p data-discover-status="titan-new-releases"
+       class="discover-status" aria-live="polite"></p>
+    <div id="titan-new-releases" class="discover-row"></div>
+  </section>
+
+  <section class="discover-section">
+    <div class="discover-section__header">
+      <h2>Trending TV Series</h2>
+      <button data-discover-refresh="titan-trending-series">
+        Refresh
+      </button>
+    </div>
+    <p data-discover-status="titan-trending-series"
+       class="discover-status" aria-live="polite"></p>
+    <div id="titan-trending-series" class="discover-row"></div>
+  </section>
+
+</main>
