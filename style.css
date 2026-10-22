@@ -837,3 +837,154 @@ body.titan-modal-open {
     padding: 20px;
   }
 }
+
+.titan-filter-section {
+  max-width: 1440px;
+  margin: 40px auto;
+  padding: 28px;
+  color: #f5f5f5;
+}
+
+.titan-filter-heading {
+  margin-bottom: 26px;
+}
+
+.titan-filter-eyebrow {
+  color: #d4af37;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.titan-filter-heading h2 {
+  margin-bottom: 8px;
+  font-size: clamp(24px, 4vw, 36px);
+}
+
+.titan-filter-heading > p:last-child {
+  color: #aaa;
+}
+
+.titan-filter-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 18px;
+  padding: 22px;
+  background: #141414;
+  border: 1px solid #303030;
+  border-radius: 12px;
+}
+
+.titan-filter-field {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+}
+
+.titan-filter-field label {
+  color: #c8c8c8;
+  font-size: 12px;
+}
+
+.titan-filter-field input,
+.titan-filter-field select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 12px;
+  color: #f5f5f5;
+  background: #202020;
+  border: 1px solid #404040;
+  border-radius: 7px;
+  font: inherit;
+}
+
+.titan-filter-form > button,
+.titan-filter-pagination button {
+  padding: 12px 16px;
+  color: #111;
+  background: #d4af37;
+  border: 0;
+  border-radius: 7px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.titan-filter-form > button {
+  align-self: end;
+}
+
+.titan-filter-form button:disabled,
+.titan-filter-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#titan-filter-status {
+  min-height: 20px;
+  margin: 20px 0;
+  color: #aaa;
+  font-size: 13px;
+}
+
+.titan-filter-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 18px;
+}
+
+.titan-filter-results .poster-card {
+  overflow: hidden;
+  background: #151515;
+  border: 1px solid #2d2d2d;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.titan-filter-results .poster-card:hover {
+  border-color: #d4af37;
+}
+
+.titan-filter-results .poster-card__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  background: #222;
+}
+
+.titan-filter-results .poster-card__details {
+  padding: 12px;
+}
+
+.titan-filter-results [data-tmdb-title] {
+  font-size: 14px;
+}
+
+.filter-card__metadata {
+  color: #d4af37;
+  font-size: 12px;
+}
+
+.titan-filter-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+@media (max-width: 600px) {
+  .titan-filter-section {
+    padding: 16px;
+  }
+
+  .titan-filter-form {
+    grid-template-columns: 1fr 1fr;
+    padding: 16px;
+  }
+
+  .titan-filter-results {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
