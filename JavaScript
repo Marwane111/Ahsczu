@@ -1959,3 +1959,233 @@ const TITANDiscover = (() => {
 document.addEventListener("DOMContentLoaded", () => {
   TITANDiscover.init();
 });
+
+"use strict";
+
+const TITANMovieDetails = (() => {
+  const API_BASE = "https://api.themoviedb.org/3";
+  const IMAGE_BASE = "https://image.tmdb.org/t/p/w780";
+
+  // Use the same TMDB token as discover.js.
+  const API_TOKEN = "YOUR_TMDB_READ_ACCESS_TOKEN";
+
+  const modal = document.querySelector("#titan-details-modal");
+  const content = document.querySelector("#titan-details-content");
+  const closeButton = document.querySelector("#titan-details-close");
+
+  function requestHeaders() {
+    return {
+      Accept: "application/json",
+      Authorization: `Bearer ${API_TOKEN}`
+    };
+  }
+
+  async function fetchJSON(path) {
+    const response = await fetch(API_BASE + path, {
+      headers: requestHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error(`TMDB request failed: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  function addText(parent, tag, className, text) {
+    const element = document.createElement(tag);
+    element.className = className;
+    element.textContent = text;
+    parent.appendChild(element);
+    return element;
+  }
+
+  function getTitle(item, type) {
+    return type === "tv"
+      ? item.name || "Untitled"
+      : item.title || "Untitled";
+  }
+
+  function getDate(item, type) {
+    return type === "tv"
+      ? item.first_air_date || ""
+      : item.release_date || "";
+  }
+
+  function renderDetails(item, type, videos) {
+    content.replaceChildren();
+
+    const hero = document.createElement("div");
+    hero.className = "titan-details__hero";
+
+    if (item.backdrop_path) {
+      hero.style.backgroundImage =
+        `linear-gradient(0deg, #111 2%, transparent 100%), ` +
+        `url("${IMAGE_BASE}${item.backdrop_path}")`;
+    }
+
+    const body = document.createElement("div");
+    body.className = "titan-details__body";
+
+    const title = getTitle(item, type);
+    const date = getDate(item, type);
+    const rating = Number(item.vote_average || 0).toFixed(1);
+
+    addText(body, "p", "titan-details__eyebrow",
+      type === "tv" ? "TV SERIES" : "MOVIE");
+
+    addText(body, "h2", "titan-details__title", title);
+
+    addText(
+      body,
+      "p",
+      "titan-details__meta",
+      `${date || "Release date unavailable"}  •  ★ ${rating}/10`
+    );
+
+    addText(
+      body,
+      "p",
+      "titan-details__overview",
+      item.overview || "No description is available."
+    );
+
+    const genres = (item.genres || [])
+      .map(genre => genre.name)
+      .join(" • ");
+
+    if (genres) {
+      addText(body, "p", "titan-details__genres", genres);
+    }
+
+    const trailer = videos.find(video =>
+      video.site === "YouTube" &&
+      video.type === "Trailer" &&
+      video.key
+    );
+
+    if (trailer) {
+      const trailerLink = document.createElement("a");
+      trailerLink.className = "titan-details__trailer";
+      trailerLink.href =
+        `https://www.youtube.com/watch?v=${encodeURIComponent(trailer.key)}`;
+      trailerLink.target = "_blank";
+      trailerLink.rel = "noopener noreferrer";
+      trailerLink.textContent = "Watch Trailer";
+      body.appendChild(trailerLink);
+    } else {
+      addText(
+        body,
+        "p",
+        "titan-details__no-trailer",
+        "No trailer is currently available."
+      );
+    }
+
+    const poster = document.createElement("img");
+    poster.className = "titan-details__poster";
+    poster.alt = `${title} poster`;
+
+    if (item.poster_path) {
+      poster.src = IMAGE_BASE + item.poster_path;
+    } else {
+      poster.hidden = true;
+    }
+
+    hero.appendChild(poster);
+    content.append(hero, body);
+  }
+
+  async function open(id, type) {
+    if (
+      !modal ||
+      !content ||
+      !/^\d+$/.test(String(id)) ||
+      !["movie", "tv"].includes(type)
+    ) {
+      return;
+    }
+
+    modal.hidden = false;
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("titan-modal-open");
+
+    content.replaceChildren();
+    addText(content, "p", "titan-details__loading", "Loading details...");
+
+    try {
+      const path = `/${type}/${encodeURIComponent(id)}`;
+      const [details, videos] = await Promise.all([
+        fetchJSON(path + "?language=en-US"),
+        fetchJSON(path + "/videos?language=en-US")
+      ]);
+
+      renderDetails(details, type, videos.results || []);
+    } catch (error) {
+      console.error("Unable to load title details:", error);
+
+      content.replaceChildren();
+      addText(
+        content,
+        "p",
+        "titan-details__error",
+        "Unable to load this title. Please try again."
+      );
+    }
+  }
+
+  function close() {
+    if (!modal) return;
+
+    modal.hidden = true;
+    modal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("titan-modal-open");
+  }
+
+  function init() {
+    if (!modal) return;
+
+    closeButton?.addEventListener("click", close);
+
+    modal.addEventListener("click", event => {
+      if (event.target === modal) close();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !modal.hidden) {
+        close();
+      }
+    });
+
+    document.addEventListener("click", event => {
+      const card = event.target.closest(
+        ".poster-card[data-tmdb-id][data-tmdb-type]"
+      );
+
+      if (!card) return;
+
+      // Leave the card's save and other buttons functional.
+      if (event.target.closest("button, a, input, select")) return;
+
+      open(card.dataset.tmdbId, card.dataset.tmdbType);
+    });
+
+    document.addEventListener("keydown", event => {
+      const card = event.target.closest(
+        ".poster-card[data-tmdb-id][data-tmdb-type]"
+      );
+
+      if (!card || !["Enter", " "].includes(event.key)) return;
+      if (event.target !== card) return;
+
+      event.preventDefault();
+      open(card.dataset.tmdbId, card.dataset.tmdbType);
+    });
+  }
+
+  return { init, open, close };
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+  TITANMovieDetails.init();
+});
